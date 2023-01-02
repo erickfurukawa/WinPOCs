@@ -11,11 +11,10 @@ int main(int argc, char** argv)
 {
 	ICLRMetaHost* pMetaHost = NULL;
 	IEnumUnknown* runtime;
+	CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&pMetaHost);
 
 	if (argc != 2)
 	{
-		CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&pMetaHost);
-
 		std::cout << "Installed runtimes:\n";
 		pMetaHost->EnumerateInstalledRuntimes(&runtime);
 		EnumerateRuntimes(&runtime);
@@ -40,6 +39,8 @@ int main(int argc, char** argv)
 		
 		CloseHandle(hProc);
 	}
+	runtime->Release();
+	pMetaHost->Release();
 
 	return 0;
 }
@@ -59,7 +60,9 @@ void EnumerateRuntimes(IEnumUnknown** runtime)
 			{
 				runtimeInfo->GetVersionString(frameworkName, &bytes);
 				std::wcout << frameworkName << std::endl;
+				runtimeInfo->Release();
 			}
 		}
 	}
+	
 }
