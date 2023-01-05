@@ -8,11 +8,15 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{B4A11FC8-CD05-4A70-B93D-313E0F12DC81}"
 	ProjectSection(SolutionItems) = preProject
 		Common\Constants.h = Common\Constants.h
+		Common\PE.cpp = Common\PE.cpp
+		Common\PE.h = Common\PE.h
 		Common\Process.cpp = Common\Process.cpp
 		Common\Process.h = Common\Process.h
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CLRDetection", "CLRDetection\CLRDetection.vcxproj", "{90E66166-C504-441E-9B03-084F93ACF060}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ManualMapping", "ManualMapping\ManualMapping.vcxproj", "{5C079390-F55B-4856-BF7E-66028F31A7E5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +42,14 @@ Global
 		{90E66166-C504-441E-9B03-084F93ACF060}.Release|x64.Build.0 = Release|x64
 		{90E66166-C504-441E-9B03-084F93ACF060}.Release|x86.ActiveCfg = Release|Win32
 		{90E66166-C504-441E-9B03-084F93ACF060}.Release|x86.Build.0 = Release|Win32
+		{5C079390-F55B-4856-BF7E-66028F31A7E5}.Debug|x64.ActiveCfg = Debug|x64
+		{5C079390-F55B-4856-BF7E-66028F31A7E5}.Debug|x64.Build.0 = Debug|x64
+		{5C079390-F55B-4856-BF7E-66028F31A7E5}.Debug|x86.ActiveCfg = Debug|Win32
+		{5C079390-F55B-4856-BF7E-66028F31A7E5}.Debug|x86.Build.0 = Debug|Win32
+		{5C079390-F55B-4856-BF7E-66028F31A7E5}.Release|x64.ActiveCfg = Release|x64
+		{5C079390-F55B-4856-BF7E-66028F31A7E5}.Release|x64.Build.0 = Release|x64
+		{5C079390-F55B-4856-BF7E-66028F31A7E5}.Release|x86.ActiveCfg = Release|Win32
+		{5C079390-F55B-4856-BF7E-66028F31A7E5}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

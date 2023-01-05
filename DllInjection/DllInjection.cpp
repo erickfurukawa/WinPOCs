@@ -2,7 +2,7 @@
 #include "../Common/Constants.h"
 #include "../Common/Process.h"
 
-BOOL injectDll(HANDLE hProc, char* dllPath);
+bool injectDll(HANDLE hProc, char* dllPath);
 
 int main(int argc, char** argv)
 {
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
  
 }
 
-BOOL injectDll(HANDLE hProc, char* dllPath) {
+bool injectDll(HANDLE hProc, char* dllPath) {
 	void* dllPathAddr = AllocMem(hProc, strlen(dllPath) + 1);
 	WriteMem(hProc, dllPathAddr, (BYTE*)dllPath, strlen(dllPath) + 1);
 
