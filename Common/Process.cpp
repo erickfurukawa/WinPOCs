@@ -1,6 +1,6 @@
 #include "Process.h"
 
-DWORD GetPid(char* procName)
+Process::Process(char* procName) 
 {
 	HANDLE hProcessSnap;
 	PROCESSENTRY32 pe32;
@@ -10,21 +10,18 @@ DWORD GetPid(char* procName)
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	if (hProcessSnap == INVALID_HANDLE_VALUE)
 	{
-		std::cerr << "CreateToolhelp32Snapshot error: " << GetLastError() << std::endl;
-		return 0;
+		throw std::runtime_error("CreateToolhelp32Snapshot error");
 	}
 
-	pe32.dwSize = sizeof(PROCESSENTRY32); 
+	pe32.dwSize = sizeof(PROCESSENTRY32);
 	if (!Process32First(hProcessSnap, &pe32))
 	{
-		std::cerr << "CreateToolhelp32Snapshot error: " << GetLastError() << std::endl;
-		CloseHandle(hProcessSnap);
-		return 0;
+		throw std::runtime_error("Process32First error");
 	}
 
 	do // loops through processes
 	{
-		if (_strcmpi(procName, pe32.szExeFile) == 0) 
+		if (_strcmpi(procName, pe32.szExeFile) == 0)
 		{
 			pid = pe32.th32ProcessID;
 			break;
@@ -32,22 +29,52 @@ DWORD GetPid(char* procName)
 	} while (Process32Next(hProcessSnap, &pe32));
 
 	CloseHandle(hProcessSnap);
-	if (!pid) {
-		std::cerr << "Could not find process: " << procName << std::endl;
+	if (!pid) 
+	{
+		throw std::runtime_error(std::string("Could not find process: ") + procName);
 	}
-	return pid;
+
+	this->pid = pid;
 }
 
-void* AllocMem(HANDLE hProc, size_t size)
+Process::~Process()
 {
-	void* addr = VirtualAllocEx(hProc, nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	if (!addr) {
-		std::cerr << "VirtualAllocEx error: " << GetLastError() << std::endl;
-	}
-	return addr;
+	this->Close();
 }
 
-void WriteMem(HANDLE hProc, void* dest, BYTE* buffer, size_t size)
+bool Process::Open(DWORD access)
 {
-	WriteProcessMemory(hProc, dest, buffer, size, nullptr);
+	this->handle = OpenProcess(access, false, this->pid);
+	if (this->handle) 
+	{
+		return true;
+	}
+	return false;
+}
+
+void Process::Close()
+{
+	if (this->handle) 
+	{
+		CloseHandle(handle);
+		this->handle = nullptr;
+	}
+}
+
+// VirtualAllocEx with default parameters for convenience
+LPVOID Process::AllocMemory(size_t size, LPVOID address, DWORD flProtect)
+{
+	return VirtualAllocEx(this->handle, address, size, MEM_COMMIT | MEM_RESERVE, flProtect);
+}
+
+// VirtualFreeEx with default parameters for convenience
+BOOL Process::FreeMemory(LPVOID address) 
+{
+	return VirtualFreeEx(this->handle, address, 0, MEM_RELEASE);
+}
+
+// WriteProcessMemory with default parameters for convenience
+BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, size_t size)
+{
+	return WriteProcessMemory(this->handle, dest, buffer, size, nullptr);
 }

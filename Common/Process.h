@@ -4,8 +4,20 @@
 #include <windows.h>
 #include <tlhelp32.h>
 
-DWORD GetPid(char* procName);
+class Process
+{
+public:
+	DWORD pid = 0;
+	HANDLE handle = nullptr;
 
-void* AllocMem(HANDLE hProc, size_t size);
+	Process(char* procName);
+	~Process();
 
-void WriteMem(HANDLE hProc, void* dest, BYTE* buffer, size_t size);
+	bool Open(DWORD access = PROCESS_ALL_ACCESS);
+	void Close();
+
+	LPVOID AllocMemory(size_t size, LPVOID address = nullptr, DWORD flProtect = PAGE_EXECUTE_READWRITE);
+	BOOL FreeMemory(LPVOID address);
+	BOOL WriteMemory(LPVOID dest, BYTE* buffer, size_t size);
+	// TODO: ReadMemory
+};

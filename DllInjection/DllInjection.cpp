@@ -3,7 +3,7 @@
 #include "../Common/Constants.h"
 #include "../Common/Process.h"
 
-bool injectDll(HANDLE hProc, char* dllPath);
+bool injectDll(Process proc, char* dllPath);
 
 int main(int argc, char** argv)
 {
@@ -23,7 +23,7 @@ int main(int argc, char** argv)
 
     std::ifstream file;
     file.open(dllPath);
-    if (!file) 
+    if (!file)
     {
         std::cerr << "Could not open dll " << dllPath << std::endl;
         return 1;
@@ -31,38 +31,34 @@ int main(int argc, char** argv)
     file.close();
     GetFullPathName(dllPath, MAX_PATH, dllPath, nullptr);
 
-    std::cout << "Injecting dll " << dllPath <<  " into process " << processName << std::endl;
+    std::cout << "Injecting dll " << dllPath << " into process " << processName << std::endl;
 
-    DWORD pid = GetPid(processName);
-    HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, true, pid);
-
-    if (!hProc)
+    Process proc = Process(processName);
+    if (!proc.Open())
     {
-        std::cerr << "OpenProccess error " << GetLastError() << std::endl;
+        std::cerr << "Could not open target process\n";
         return 1;
     }
 
-    if (!injectDll(hProc, dllPath))
+    if (!injectDll(proc, dllPath)) 
     {
-        CloseHandle(hProc);
-        std::cerr << "Could not inject dll in the target process" << std::endl;
+        std::cerr << "Could not inject dll into the target process\n";
         return 1;
     }
-
-    CloseHandle(hProc);
-    std::cout << "Dll injected successfully" << std::endl;
+      
+    std::cout << "Dll has probably been injected successfully\n";
+    proc.Close();
     return 0;
- 
 }
 
-bool injectDll(HANDLE hProc, char* dllPath) {
-	void* dllPathAddr = AllocMem(hProc, strlen(dllPath) + 1);
-	WriteMem(hProc, dllPathAddr, (BYTE*)dllPath, strlen(dllPath) + 1);
+bool injectDll(Process proc, char* dllPath) {
+	void* dllPathAddr = proc.AllocMemory(strlen(dllPath) + 1);
+	proc.WriteMemory(dllPathAddr, (BYTE*)dllPath, strlen(dllPath) + 1);
 
 	HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
 	void* loadLibraryAddr = GetProcAddress(kernel32, "LoadLibraryA");
 
-	HANDLE hThread = CreateRemoteThread(hProc, nullptr, 0, (LPTHREAD_START_ROUTINE)loadLibraryAddr, dllPathAddr, 0, nullptr);
+	HANDLE hThread = CreateRemoteThread(proc.handle, nullptr, 0, (LPTHREAD_START_ROUTINE)loadLibraryAddr, dllPathAddr, 0, nullptr);
     if (!hThread)
     {
         std::cerr << "CreateRemoteThread error " << GetLastError() << std::endl;

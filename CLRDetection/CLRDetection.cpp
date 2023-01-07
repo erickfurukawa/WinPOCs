@@ -24,20 +24,19 @@ int main(int argc, char** argv)
 		char processName[MAX_LENGTH];
 		strncpy_s(processName, argv[1], MAX_LENGTH);
 
-		DWORD pid = GetPid(processName);
-		HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, true, pid);
+		Process proc = Process(processName);
 
-		if (!hProc)
+		if (!proc.Open())
 		{
 			std::cerr << "OpenProccess error " << GetLastError() << std::endl;
 			return 1;
 		}
 
 		std::cout << "Loaded runtimes in " << processName << ": " << std::endl;;
-		pMetaHost->EnumerateLoadedRuntimes(hProc, &runtime);
+		pMetaHost->EnumerateLoadedRuntimes(proc.handle, &runtime);
 		EnumerateRuntimes(&runtime);
 		
-		CloseHandle(hProc);
+		proc.Close();
 	}
 	runtime->Release();
 	pMetaHost->Release();
