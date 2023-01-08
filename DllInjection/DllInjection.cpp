@@ -1,9 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include "../Common/Constants.h"
-#include "../Common/Process.h"
-
-bool injectDll(Process proc, char* dllPath);
+#include "DllInjection.h"
 
 int main(int argc, char** argv)
 {
@@ -40,18 +35,21 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    if (!injectDll(proc, dllPath)) 
+    HANDLE hThread = InjectDll(proc, dllPath);
+    if (!hThread) 
     {
         std::cerr << "Could not inject dll into the target process\n";
         return 1;
     }
       
     std::cout << "Dll has probably been injected successfully\n";
+    CloseHandle(hThread);
     proc.Close();
     return 0;
 }
 
-bool injectDll(Process proc, char* dllPath) {
+// The thread handle must be closed by the caller
+HANDLE InjectDll(Process proc, char* dllPath) {
 	void* dllPathAddr = proc.AllocMemory(strlen(dllPath) + 1);
 	proc.WriteMemory(dllPathAddr, (BYTE*)dllPath, strlen(dllPath) + 1);
 
@@ -62,9 +60,6 @@ bool injectDll(Process proc, char* dllPath) {
     if (!hThread)
     {
         std::cerr << "CreateRemoteThread error " << GetLastError() << std::endl;
-        return false;
     }
-
-    CloseHandle(hThread);
-    return true;
+    return hThread;
 }
