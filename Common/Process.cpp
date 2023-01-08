@@ -1,4 +1,6 @@
 #include "Process.h"
+#include <iostream>
+#include <tlhelp32.h>
 
 Process::Process(char* procName) 
 {

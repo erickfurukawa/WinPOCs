@@ -129,6 +129,10 @@
   <ItemGroup>
     <ClCompile Include="..\Common\Process.cpp" />
     <ClCompile Include="DllInjection.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DllInjection.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -129,7 +129,11 @@
   <ItemGroup>
     <ClCompile Include="..\Common\PE.cpp" />
     <ClCompile Include="..\Common\Process.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="ManualMapping.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ManualMapping.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

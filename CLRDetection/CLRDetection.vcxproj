@@ -128,7 +128,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\Common\Process.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="CLRDetection.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CLRDetection.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

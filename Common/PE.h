@@ -1,7 +1,6 @@
 #pragma once
 
 #include <windows.h>
-#include <iostream>
 
 typedef struct PEHeaders 
 {
@@ -12,4 +11,3 @@ typedef struct PEHeaders
 } PEInfo;
 
 bool GetPEHeaders(char* buffer, PEHeaders* headers);
-

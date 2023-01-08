@@ -1,4 +1,5 @@
 #include "PE.h"
+#include <iostream>
 
 bool GetPEHeaders(char* buffer, PEHeaders* headers) 
 {
