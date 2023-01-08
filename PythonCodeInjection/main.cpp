@@ -101,9 +101,11 @@ int main(int argc, char** argv)
 
     file.seekg(0, std::ios::beg);
     file.read(reinterpret_cast<char*>(codeStr), length);
+    file.close();
 
     void* codeAddr = proc.AllocMemory(static_cast<size_t>(length) + 1);
     proc.WriteMemory(codeAddr, codeStr, static_cast<size_t>(length) + 1);
+    delete[] codeStr;
 
     // call PyRun_SimpleString
     std::cout << "Calling PyRun_SimpleString...\n";
