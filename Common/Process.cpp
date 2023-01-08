@@ -41,7 +41,7 @@ Process::Process(char* procName)
 
 Process::~Process()
 {
-	this->Close();
+
 }
 
 bool Process::Open(DWORD access)

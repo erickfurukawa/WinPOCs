@@ -39,12 +39,7 @@ int main(int argc, char** argv)
     GetFullPathName(pythonDllPath, MAX_PATH, pythonDllPath, nullptr);
     GetFullPathName(pythonCodePath, MAX_PATH, pythonCodePath, nullptr);
 
-    /*
-        Windows ASLR is weird. As long as the injector has pythonDll loaded,
-        the dll will also be loaded in the same address in different processes,
-        so we won`t unload it until we finish.
-        TODO: parse python DLL and get exports addresses instead of using GetProcAddress().
-    */
+    // TODO: parse python DLLand get exports addresses instead of using GetProcAddress().
     std::cout << "Loading python dll...\n";
     HMODULE hDll = LoadLibraryA(pythonDllPath);
     if (!hDll)
@@ -52,6 +47,7 @@ int main(int argc, char** argv)
         std::cerr << "Could not load " << pythonDllPath << " in the injector\n";
         return 1;
     }
+
     void* Py_InitializeEx = GetProcAddress(hDll, "Py_InitializeEx");
     void* PyRun_SimpleString = GetProcAddress(hDll, "PyRun_SimpleString");
     if (!Py_InitializeEx || !PyRun_SimpleString)
@@ -110,7 +106,7 @@ int main(int argc, char** argv)
     proc.WriteMemory(codeAddr, codeStr, static_cast<size_t>(length) + 1);
 
     // call PyRun_SimpleString
-    std::cout << "Calling Py_InitializeEx...\n";
+    std::cout << "Calling PyRun_SimpleString...\n";
     hThread = CreateRemoteThread(proc.handle, nullptr, 0, (LPTHREAD_START_ROUTINE)PyRun_SimpleString, codeAddr, 0, nullptr);
     if (!hThread)
     {
