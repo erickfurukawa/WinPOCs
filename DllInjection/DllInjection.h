@@ -5,4 +5,4 @@
 #include "../Common/Constants.h"
 #include "../Common/Process.h"
 
-HANDLE InjectDll(Process proc, char* dllPath);
+HANDLE InjectDll(Process* proc, char* dllPath);

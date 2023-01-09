@@ -39,7 +39,7 @@ int main(int argc, char** argv)
     GetFullPathName(pythonDllPath, MAX_PATH, pythonDllPath, nullptr);
     GetFullPathName(pythonCodePath, MAX_PATH, pythonCodePath, nullptr);
 
-    // TODO: parse python DLLand get exports addresses instead of using GetProcAddress().
+    // TODO: parse python DLL and get exports addresses instead of using GetProcAddress().
     std::cout << "Loading python dll...\n";
     HMODULE hDll = LoadLibraryA(pythonDllPath);
     if (!hDll)
@@ -59,17 +59,20 @@ int main(int argc, char** argv)
 
     // Inject dll
     std::cout << "Injecting dll " << pythonDllPath << " into process " << processName << "...\n";
-    Process proc = Process(processName);
-    if (!proc.Open())
+    Process* proc = new Process(processName);
+    if (!proc->Open())
     {
         std::cerr << "Could not open target process\n";
+        delete proc;
         return 1;
     }
-
+   
     HANDLE hThread = InjectDll(proc, pythonDllPath);
     if (!hThread)
     {
         std::cerr << "Could not inject dll into the target process\n";
+        proc->Close();
+        delete proc;
         return 1;
     }
     WaitForSingleObject(hThread, 1000);
@@ -78,10 +81,12 @@ int main(int argc, char** argv)
 
     // Call python init
     std::cout << "Calling Py_InitializeEx...\n";
-    hThread = CreateRemoteThread(proc.handle, nullptr, 0, (LPTHREAD_START_ROUTINE)Py_InitializeEx, nullptr, 0, nullptr);
+    hThread = CreateRemoteThread(proc->handle, nullptr, 0, (LPTHREAD_START_ROUTINE)Py_InitializeEx, nullptr, 0, nullptr);
     if (!hThread)
     {
         std::cerr << "Could not call Py_InitializeEx in the target process\n";
+        proc->Close();
+        delete proc;
         return 1;
     }
     WaitForSingleObject(hThread, 1000);
@@ -103,23 +108,27 @@ int main(int argc, char** argv)
     file.read(reinterpret_cast<char*>(codeStr), length);
     file.close();
 
-    void* codeAddr = proc.AllocMemory(static_cast<size_t>(length) + 1);
-    proc.WriteMemory(codeAddr, codeStr, static_cast<size_t>(length) + 1);
+    void* codeAddr = proc->AllocMemory(static_cast<size_t>(length) + 1);
+    proc->WriteMemory(codeAddr, codeStr, static_cast<size_t>(length) + 1);
     delete[] codeStr;
 
     // call PyRun_SimpleString
     std::cout << "Calling PyRun_SimpleString...\n";
-    hThread = CreateRemoteThread(proc.handle, nullptr, 0, (LPTHREAD_START_ROUTINE)PyRun_SimpleString, codeAddr, 0, nullptr);
+    hThread = CreateRemoteThread(proc->handle, nullptr, 0, (LPTHREAD_START_ROUTINE)PyRun_SimpleString, codeAddr, 0, nullptr);
     if (!hThread)
     {
         std::cerr << "Could not call PyRun_SimpleString in the target process\n";
+        proc->Close();
+        delete proc;
         return 1;
     }
     WaitForSingleObject(hThread, 1000);
     CloseHandle(hThread);
     std::cout << "PyRun_SimpleString has probably been called successfully!\n\n";
 
-    proc.Close();
+    proc->Close();
+   
+    delete proc;
     return 0;
 }
 

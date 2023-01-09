@@ -4,6 +4,10 @@
 
 class Process
 {
+private:
+	Process(Process const&);
+	Process& operator=(Process const&);
+
 public:
 	DWORD pid = 0;
 	HANDLE handle = nullptr;
