@@ -5,21 +5,21 @@
 class Process
 {
 private:
-	Process(const Process&);
-	Process& operator=(const Process&);
+    Process(const Process&);
+    Process& operator=(const Process&);
 
 public:
-	DWORD pid = 0;
-	HANDLE handle = nullptr;
+    DWORD pid = 0;
+    HANDLE handle = nullptr;
 
-	Process(char* procName);
-	~Process();
+    Process(char* procName);
+    ~Process();
 
-	bool Open(DWORD access = PROCESS_ALL_ACCESS);
-	void Close();
+    bool Open(DWORD access = PROCESS_ALL_ACCESS);
+    void Close();
 
-	LPVOID AllocMemory(size_t size, LPVOID address = nullptr, DWORD flProtect = PAGE_EXECUTE_READWRITE);
-	BOOL FreeMemory(LPVOID address);
-	BOOL WriteMemory(LPVOID dest, BYTE* buffer, size_t size);
-	// TODO: ReadMemory
+    LPVOID AllocMemory(size_t size, LPVOID address = nullptr, DWORD flProtect = PAGE_EXECUTE_READWRITE);
+    BOOL FreeMemory(LPVOID address);
+    BOOL WriteMemory(LPVOID dest, BYTE* buffer, size_t size);
+    // TODO: ReadMemory
 };
