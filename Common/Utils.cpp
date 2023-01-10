@@ -4,13 +4,13 @@
 
 void ThrowException(std::string msg)
 {
-	std::cerr << msg;
-	throw std::runtime_error(msg);
+    std::cerr << msg;
+    throw std::runtime_error(msg);
 }
 
 void ThrowException(char* msg)
 {
-	ThrowException(std::string(msg));
+    ThrowException(std::string(msg));
 }
 
 bool FileExists(char* fileName)

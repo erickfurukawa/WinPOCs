@@ -7,45 +7,45 @@
 
 int main(int argc, char** argv)
 {
-	ICLRMetaHost* pMetaHost = NULL;
-	IEnumUnknown* runtime;
-	CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&pMetaHost);
+    ICLRMetaHost* pMetaHost = NULL;
+    IEnumUnknown* runtime;
+    CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&pMetaHost);
 
-	bool success = false;
-	if (argc != 2)
-	{
-		std::cout << "Installed runtimes:\n";
-		pMetaHost->EnumerateInstalledRuntimes(&runtime);
-		EnumerateRuntimes(&runtime);
-		runtime->Release();
-		success = true;
-	}
-	else
-	{
-		char processName[MAX_LENGTH+1];
-		strncpy_s(processName, argv[1], MAX_LENGTH+1);
+    bool success = false;
+    if (argc != 2)
+    {
+        std::cout << "Installed runtimes:\n";
+        pMetaHost->EnumerateInstalledRuntimes(&runtime);
+        EnumerateRuntimes(&runtime);
+        runtime->Release();
+        success = true;
+    }
+    else
+    {
+        char processName[MAX_LENGTH+1];
+        strncpy_s(processName, argv[1], MAX_LENGTH+1);
 
-		Process* proc = new Process(processName);
+        Process* proc = new Process(processName);
 
-		if (proc->Open())
-		{
-			std::cout << "Loaded runtimes in " << processName << ": " << std::endl;
-			pMetaHost->EnumerateLoadedRuntimes(proc->handle, &runtime);
-			EnumerateRuntimes(&runtime);
-			runtime->Release();
+        if (proc->Open())
+        {
+            std::cout << "Loaded runtimes in " << processName << ": " << std::endl;
+            pMetaHost->EnumerateLoadedRuntimes(proc->handle, &runtime);
+            EnumerateRuntimes(&runtime);
+            runtime->Release();
 
-			proc->Close();
-			success = true;
-		}
-		else 
-		{
-			std::cerr << "OpenProccess error " << GetLastError() << std::endl;
-		}
-		delete proc;
-	}
-	pMetaHost->Release();
+            proc->Close();
+            success = true;
+        }
+        else 
+        {
+            std::cerr << "OpenProccess error " << GetLastError() << std::endl;
+        }
+        delete proc;
+    }
+    pMetaHost->Release();
 
-	if (success)
-		return 0;
-	return 1;
+    if (success)
+        return 0;
+    return 1;
 }
