@@ -1,4 +1,5 @@
 #include "PE.h"
+#include "Utils.h"
 #include <iostream>
 #include <fstream>
 
@@ -10,7 +11,7 @@ PE::PE(char* fileName)
 
 	if (!file.is_open())
 	{
-		throw std::runtime_error(std::string("Could not open file: ") + fileName);
+		ThrowException(std::string("Could not open file: ") + fileName);
 	}
 
 	GetFullPathName(fileName, MAX_PATH+1, this->filePath, nullptr);
@@ -26,7 +27,7 @@ PE::PE(char* fileName)
 	// get PE headers
 	if (!GetPEHeaders(this->buffer, &this->headers)) 
 	{
-		throw std::runtime_error("Could not get valid PE headers");
+		ThrowException("Could not get valid PE headers");
 	}
 }
 

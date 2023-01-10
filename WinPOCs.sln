@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{B4A11F
 		Common\PE.h = Common\PE.h
 		Common\Process.cpp = Common\Process.cpp
 		Common\Process.h = Common\Process.h
+		Common\Utils.cpp = Common\Utils.cpp
+		Common\Utils.h = Common\Utils.h
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CLRDetection", "CLRDetection\CLRDetection.vcxproj", "{90E66166-C504-441E-9B03-084F93ACF060}"

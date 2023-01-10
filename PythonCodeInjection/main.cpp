@@ -2,9 +2,8 @@
 #include <fstream>
 #include "../Common/Process.h"
 #include "../Common/Constants.h"
+#include "../Common/Utils.h"
 #include "../DllInjection/DllInjection.h"
-
-bool FileExists(char* filename);
 
 int main(int argc, char** argv)
 {
@@ -130,16 +129,4 @@ int main(int argc, char** argv)
    
     delete proc;
     return 0;
-}
-
-bool FileExists(char* filename)
-{
-    std::ifstream file;
-    file.open(filename);
-    if (!file.is_open())
-    {
-        return false;
-    }
-    file.close();
-    return true;
 }

@@ -129,6 +129,7 @@
   <ItemGroup>
     <ClCompile Include="..\Common\PE.cpp" />
     <ClCompile Include="..\Common\Process.cpp" />
+    <ClCompile Include="..\Common\Utils.cpp" />
     <ClCompile Include="DllInjection.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

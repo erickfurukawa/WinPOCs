@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\Common\Process.cpp" />
+    <ClCompile Include="..\Common\Utils.cpp" />
     <ClCompile Include="..\DllInjection\DllInjection.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

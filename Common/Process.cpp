@@ -1,5 +1,5 @@
 #include "Process.h"
-#include <iostream>
+#include "Utils.h"
 #include <tlhelp32.h>
 
 Process::Process(char* procName) 
@@ -12,13 +12,13 @@ Process::Process(char* procName)
 	hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	if (hProcessSnap == INVALID_HANDLE_VALUE)
 	{
-		throw std::runtime_error("CreateToolhelp32Snapshot error");
+		ThrowException("CreateToolhelp32Snapshot error");
 	}
 
 	pe32.dwSize = sizeof(PROCESSENTRY32);
 	if (!Process32First(hProcessSnap, &pe32))
 	{
-		throw std::runtime_error("Process32First error");
+		ThrowException("Process32First error");
 	}
 
 	do // loops through processes
@@ -33,7 +33,7 @@ Process::Process(char* procName)
 	CloseHandle(hProcessSnap);
 	if (!pid) 
 	{
-		throw std::runtime_error(std::string("Could not find process: ") + procName);
+		ThrowException(std::string("Could not find process: ") + procName);
 	}
 
 	this->pid = pid;
