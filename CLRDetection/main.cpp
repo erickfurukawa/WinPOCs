@@ -22,8 +22,8 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		char processName[MAX_LENGTH];
-		strncpy_s(processName, argv[1], MAX_LENGTH);
+		char processName[MAX_LENGTH+1];
+		strncpy_s(processName, argv[1], MAX_LENGTH+1);
 
 		Process* proc = new Process(processName);
 

@@ -1,40 +1,32 @@
 #include "DllInjection.h"
+#include "../Common/PE.h"
 
 int main(int argc, char** argv)
 {
-    char processName[MAX_LENGTH];
-    char dllPath[MAX_PATH];
+    char processName[MAX_LENGTH+1];
+    char dllPath[MAX_PATH+1];
 
     if (argc == 3)
     {
-        strncpy_s(processName, argv[1], MAX_LENGTH);
-        strncpy_s(dllPath, argv[2], MAX_PATH);
+        strncpy_s(processName, argv[1], MAX_LENGTH+1);
+        strncpy_s(dllPath, argv[2], MAX_PATH+1);
     }
     else
     {
         std::cout << "Process name:\n";
-        std::cin.getline(processName, MAX_LENGTH);
+        std::cin.getline(processName, MAX_LENGTH+1);
         std::cout << "Dll path:\n";
-        std::cin.getline(dllPath, MAX_PATH);
+        std::cin.getline(dllPath, MAX_PATH+1);
     }
 
-    std::ifstream file;
-    file.open(dllPath);
-    if (!file)
-    {
-        std::cerr << "Could not open dll " << dllPath << std::endl;
-        return 1;
-    }
-    file.close();
-    GetFullPathName(dllPath, MAX_PATH, dllPath, nullptr);
-
-    std::cout << "Injecting dll " << dllPath << " into process " << processName << std::endl;
+    PE* dll = new PE(dllPath);
+    std::cout << "Injecting dll " << dll->filePath << " into process " << processName << std::endl;
 
     Process* proc = new Process(processName);
     bool success = false;
-    if (proc->Open()) 
+    if (proc->Open(PROCESS_CREATE_THREAD | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION))
     {
-        HANDLE hThread = InjectDll(proc, dllPath);
+        HANDLE hThread = InjectDll(proc, dll->filePath);
         if (hThread)
         {
             CloseHandle(hThread);
@@ -51,7 +43,8 @@ int main(int argc, char** argv)
     { 
         std::cerr << "Could not open target process\n";
     }
-        
+    
+    delete dll;
     delete proc;
 
     if (success)

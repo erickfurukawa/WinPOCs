@@ -1,7 +1,46 @@
 #include "PE.h"
 #include <iostream>
+#include <fstream>
 
-bool GetPEHeaders(char* buffer, PEHeaders* headers) 
+PE::PE(char* fileName)
+{
+	// reads file and allocates buffer
+	std::ifstream file;
+	file.open(fileName, std::ios::binary);
+
+	if (!file.is_open())
+	{
+		throw std::runtime_error(std::string("Could not open file: ") + fileName);
+	}
+
+	GetFullPathName(fileName, MAX_PATH+1, this->filePath, nullptr);
+
+	file.seekg(0, std::ios::end);
+	this->fileSize = file.tellg();
+	this->buffer = new BYTE[static_cast<int>(this->fileSize) + 1];
+
+	file.seekg(0, std::ios::beg);
+	file.read(reinterpret_cast<char*>(this->buffer), this->fileSize);
+	file.close();
+
+	// get PE headers
+	if (!GetPEHeaders(this->buffer, &this->headers)) 
+	{
+		throw std::runtime_error("Could not get valid PE headers");
+	}
+}
+
+PE::~PE()
+{
+	if (this->buffer)
+	{
+		delete[] this->buffer;
+		this->buffer = nullptr;
+	}
+}
+
+
+bool GetPEHeaders(BYTE* buffer, PEHeaders* headers) 
 {
 	PIMAGE_DOS_HEADER pDOSHeader;
 	PIMAGE_NT_HEADERS pNTHeaders;

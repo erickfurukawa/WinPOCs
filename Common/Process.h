@@ -5,8 +5,8 @@
 class Process
 {
 private:
-	Process(Process const&);
-	Process& operator=(Process const&);
+	Process(const Process&);
+	Process& operator=(const Process&);
 
 public:
 	DWORD pid = 0;

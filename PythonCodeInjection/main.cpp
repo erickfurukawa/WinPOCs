@@ -8,22 +8,22 @@ bool FileExists(char* filename);
 
 int main(int argc, char** argv)
 {
-    char processName[MAX_LENGTH];
-    char pythonDllPath[MAX_PATH];
-    char pythonCodePath[MAX_PATH];
+    char processName[MAX_LENGTH+1];
+    char pythonDllPath[MAX_PATH+1];
+    char pythonCodePath[MAX_PATH+1];
 
     if (argc == 4) {
-        strncpy_s(processName, argv[1], MAX_LENGTH);
-        strncpy_s(pythonDllPath, argv[2], MAX_PATH);
-        strncpy_s(pythonCodePath, argv[3], MAX_PATH);
+        strncpy_s(processName, argv[1], MAX_LENGTH+1);
+        strncpy_s(pythonDllPath, argv[2], MAX_PATH+1);
+        strncpy_s(pythonCodePath, argv[3], MAX_PATH+1);
     }
     else {
         std::cout << "Process name:\n";
-        std::cin.getline(processName, MAX_LENGTH);
+        std::cin.getline(processName, MAX_LENGTH+1);
         std::cout << "pythonXX.dll path:\n";
-        std::cin.getline(pythonDllPath, MAX_PATH);
+        std::cin.getline(pythonDllPath, MAX_PATH+1);
         std::cout << "python code path:\n";
-        std::cin.getline(pythonCodePath, MAX_PATH);
+        std::cin.getline(pythonCodePath, MAX_PATH+1);
     }
 
     if (!FileExists(pythonDllPath))
@@ -36,8 +36,8 @@ int main(int argc, char** argv)
         std::cerr << "Could not open python code " << pythonCodePath << "\n";
         return 1;
     }
-    GetFullPathName(pythonDllPath, MAX_PATH, pythonDllPath, nullptr);
-    GetFullPathName(pythonCodePath, MAX_PATH, pythonCodePath, nullptr);
+    GetFullPathName(pythonDllPath, MAX_PATH+1, pythonDllPath, nullptr);
+    GetFullPathName(pythonCodePath, MAX_PATH+1, pythonCodePath, nullptr);
 
     // TODO: parse python DLL and get exports addresses instead of using GetProcAddress().
     std::cout << "Loading python dll...\n";
@@ -136,7 +136,7 @@ bool FileExists(char* filename)
 {
     std::ifstream file;
     file.open(filename);
-    if (!file)
+    if (!file.is_open())
     {
         return false;
     }
