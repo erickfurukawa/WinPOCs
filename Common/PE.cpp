@@ -18,7 +18,7 @@ PE::PE(char* fileName)
 
     file.seekg(0, std::ios::end);
     this->fileSize = file.tellg();
-    this->buffer = new BYTE[static_cast<int>(this->fileSize) + 1];
+    this->buffer = new BYTE[static_cast<int>(this->fileSize)];
 
     file.seekg(0, std::ios::beg);
     file.read(reinterpret_cast<char*>(this->buffer), this->fileSize);
@@ -40,6 +40,21 @@ PE::~PE()
     }
 }
 
+BYTE* PE::RVAToBufferPointer(uintptr_t rva) {
+    PIMAGE_FILE_HEADER pFileHeader = reinterpret_cast<PIMAGE_FILE_HEADER>(&this->headers.pNTHeaders->FileHeader);
+    PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(this->headers.pNTHeaders);
+
+    for (int i = 0; i < pFileHeader->NumberOfSections; i++) 
+    {
+        if (rva >= pSectionHeader->VirtualAddress && rva < pSectionHeader->VirtualAddress + pSectionHeader->SizeOfRawData)
+        {
+            DWORD offset = rva - pSectionHeader->VirtualAddress;
+            return reinterpret_cast<BYTE*>(this->buffer + pSectionHeader->PointerToRawData + offset);
+        }
+        pSectionHeader++;
+    }
+    return nullptr;
+}
 
 bool GetPEHeaders(BYTE* buffer, PEHeaders* headers) 
 {

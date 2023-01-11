@@ -21,6 +21,8 @@ public:
     PE(char* fileName);
     ~PE();
 
+    BYTE* RVAToBufferPointer(uintptr_t rva);
+
     char filePath[MAX_PATH+1];
 
     BYTE* buffer = nullptr;
