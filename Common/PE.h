@@ -21,7 +21,9 @@ public:
     PE(char* fileName);
     ~PE();
 
-    BYTE* RVAToBufferPointer(uintptr_t rva);
+    BYTE* RVAToBufferPointer(DWORD rva);
+    DWORD GetExportRVA(char* exportName);
+    DWORD GetExportRVA(DWORD ordinal);
 
     char filePath[MAX_PATH+1];
 

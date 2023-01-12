@@ -40,7 +40,7 @@ PE::~PE()
     }
 }
 
-BYTE* PE::RVAToBufferPointer(uintptr_t rva) {
+BYTE* PE::RVAToBufferPointer(DWORD rva) {
     PIMAGE_FILE_HEADER pFileHeader = reinterpret_cast<PIMAGE_FILE_HEADER>(&this->headers.pNTHeaders->FileHeader);
     PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(this->headers.pNTHeaders);
 
@@ -54,6 +54,41 @@ BYTE* PE::RVAToBufferPointer(uintptr_t rva) {
         pSectionHeader++;
     }
     return nullptr;
+}
+
+// TODO: forwarder RVA https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#export-address-table
+DWORD PE::GetExportRVA(char* exportName)
+{
+    PIMAGE_EXPORT_DIRECTORY pExportDirectory = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
+        this->RVAToBufferPointer(this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
+    DWORD* pfuncNameRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfNames));
+    DWORD* pfuncRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
+
+    for (int i = 0; i < pExportDirectory->NumberOfNames; i++)
+    {
+        if (_strcmpi(exportName, reinterpret_cast<char*>(this->RVAToBufferPointer(*pfuncNameRVA))) == 0)
+        {
+            return *pfuncRVA;
+        }
+        pfuncNameRVA++;
+        pfuncRVA++;
+    }
+    return 0;
+}
+
+// TODO: forwarder RVA
+DWORD PE::GetExportRVA(DWORD ordinal) 
+{
+    PIMAGE_EXPORT_DIRECTORY pExportDirectory = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
+        this->RVAToBufferPointer(this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
+    DWORD* pfuncRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
+
+    DWORD unbiasedOrdinal = ordinal - pExportDirectory->Base;
+    if (unbiasedOrdinal >= 0 && unbiasedOrdinal < pExportDirectory->NumberOfFunctions)
+    {
+        return pfuncRVA[unbiasedOrdinal];
+    }
+    return 0;
 }
 
 bool GetPEHeaders(BYTE* buffer, PEHeaders* headers) 
