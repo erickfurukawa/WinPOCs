@@ -26,7 +26,6 @@ int main(int argc, char** argv)
         std::cin.getline(pythonCodePath, MAX_PATH+1);
     }
 
-    PE* pythonDll = new PE(pythonDllPath);
     if (!FileExists(pythonCodePath))
     {
         std::cerr << "Could not open python code " << pythonCodePath << "\n";
@@ -34,13 +33,16 @@ int main(int argc, char** argv)
     }
     GetFullPathName(pythonCodePath, MAX_PATH+1, pythonCodePath, nullptr);
 
+    //TODO: proper cleanup
     // Inject dll
+    PE* pythonDll = new PE(pythonDllPath);
     std::cout << "Injecting dll " << pythonDll->filePath << " into process " << processName << "...\n";
     Process* proc = new Process(processName);
     if (!proc->Open())
     {
         std::cerr << "Could not open target process\n";
         delete proc;
+        delete pythonDll;
         return 1;
     }
    
@@ -50,6 +52,7 @@ int main(int argc, char** argv)
         std::cerr << "Could not inject dll into the target process\n";
         proc->Close();
         delete proc;
+        delete pythonDll;
         return 1;
     }
     WaitForSingleObject(hThread, 1000);
@@ -63,6 +66,7 @@ int main(int argc, char** argv)
 
     DWORD Py_InitializeExRVA = pythonDll->GetExportRVA((char*)"Py_InitializeEx");
     DWORD PyRun_SimpleStringRVA = pythonDll->GetExportRVA((char*)"PyRun_SimpleString");
+    delete pythonDll;
 
     if (!Py_InitializeExRVA || !PyRun_SimpleStringRVA)
     {
