@@ -98,7 +98,6 @@ DWORD PE::GetExportRVA(DWORD ordinal)
 
 DWORD PE::GetImportRVA(char* moduleName, char* importName)
 {
-    DWORD rva = 0;
     if (this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
     {
         PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(
