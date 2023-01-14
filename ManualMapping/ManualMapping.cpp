@@ -1,4 +1,5 @@
 #include "ManualMapping.h"
+#include "../Common/Constants.h"
 
 /*
     The shellcode is injected in the target process to perform relocations,
@@ -47,7 +48,7 @@ void __stdcall Shellcode(ManualMappingData* data) {
 
     // Imports
     data->status = 4;
-    if (pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT].Size)
+    if (pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
     {
         PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(data->baseAddr + pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
         while (pImportDescriptor->Name)
