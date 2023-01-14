@@ -96,6 +96,43 @@ DWORD PE::GetExportRVA(DWORD ordinal)
     return 0;
 }
 
+DWORD PE::GetImportRVA(char* moduleName, char* importName)
+{
+    DWORD rva = 0;
+    if (this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
+    {
+        PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(
+            this->RVAToBufferPointer(this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress));
+
+        while (pImportDescriptor->Name)
+        {
+            char* dllName = reinterpret_cast<char*>(this->RVAToBufferPointer(pImportDescriptor->Name));
+            if (_strcmpi(moduleName, dllName) == 0)
+            {
+                UINT_PTR* pThunkRef = reinterpret_cast<UINT_PTR*>(this->RVAToBufferPointer(pImportDescriptor->OriginalFirstThunk));
+                DWORD IATEntryRVA = pImportDescriptor->FirstThunk;
+                while (*pThunkRef)
+                {
+                    if (!IMAGE_SNAP_BY_ORDINAL(*pThunkRef)) 
+                    {
+                        PIMAGE_IMPORT_BY_NAME pImport = reinterpret_cast<PIMAGE_IMPORT_BY_NAME>(this->RVAToBufferPointer(*pThunkRef));
+                        if (_strcmpi(importName, pImport->Name) == 0)
+                        {
+                            return IATEntryRVA;
+                        }
+                    }
+                    pThunkRef++;
+                    IATEntryRVA += sizeof(void*);
+                }
+            }
+            pImportDescriptor++;
+        }
+    }
+    std::cerr << "Could not find IAT entry for " << moduleName << "." << importName << "\n";
+    return 0;
+}
+
+
 bool GetPEHeaders(BYTE* buffer, PEHeaders* headers) 
 {
     PIMAGE_DOS_HEADER pDOSHeader;

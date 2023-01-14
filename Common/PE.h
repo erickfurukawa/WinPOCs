@@ -24,6 +24,9 @@ public:
     BYTE* RVAToBufferPointer(DWORD rva);
     DWORD GetExportRVA(char* exportName);
     DWORD GetExportRVA(DWORD ordinal);
+    DWORD GetImportRVA(char* moduleName, char* importName);
+    // TODO: ordinal GetImportRVA
+    // DWORD GetImportRVA(char* moduleName, DWORD ordinal);
 
     char filePath[MAX_PATH+1];
     char fileName[MAX_LENGTH+1];
