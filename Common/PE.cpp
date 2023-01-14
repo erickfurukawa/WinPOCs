@@ -5,7 +5,7 @@
 
 PE::PE(char* fileName)
 {
-    // reads file and allocates buffer
+    // checks if file exists
     std::ifstream file;
     file.open(fileName, std::ios::binary);
 
@@ -16,6 +16,11 @@ PE::PE(char* fileName)
 
     GetFullPathName(fileName, MAX_PATH+1, this->filePath, nullptr);
 
+    // get only filename
+    std::string fullPath = std::string(this->filePath);
+    strncpy_s(this->fileName, fullPath.substr(fullPath.find_last_of("/\\") + 1).c_str(), MAX_LENGTH + 1);
+
+    // get file size and allocate buffer
     file.seekg(0, std::ios::end);
     this->fileSize = file.tellg();
     this->buffer = new BYTE[static_cast<int>(this->fileSize)];

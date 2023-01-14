@@ -26,6 +26,7 @@ public:
     DWORD GetExportRVA(DWORD ordinal);
 
     char filePath[MAX_PATH+1];
+    char fileName[MAX_LENGTH+1];
 
     BYTE* buffer = nullptr;
     size_t fileSize = 0;

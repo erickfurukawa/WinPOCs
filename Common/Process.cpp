@@ -1,6 +1,6 @@
 #include "Process.h"
 #include "Utils.h"
-#include <tlhelp32.h>
+#include <iostream>
 
 Process::Process(char* procName) 
 {
@@ -79,4 +79,44 @@ BOOL Process::FreeMemory(LPVOID address)
 BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, size_t size)
 {
     return WriteProcessMemory(this->handle, dest, buffer, size, nullptr);
+}
+
+MODULEENTRY32 Process::GetModule(char* modName)
+{
+    HANDLE hModuleSnap;
+    MODULEENTRY32 mod32;
+    bool found = false;
+
+    // creates process snapshot
+    hModuleSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE32 | TH32CS_SNAPMODULE, this->pid);
+    if (hModuleSnap == INVALID_HANDLE_VALUE)
+    {
+        std::cerr << "CreateToolhelp32Snapshot error\n";
+        return MODULEENTRY32{ 0 };
+    }
+
+    mod32.dwSize = sizeof(MODULEENTRY32);
+    if (!Module32First(hModuleSnap, &mod32))
+    {
+        CloseHandle(hModuleSnap);
+        std::cerr << "Module32First error " << GetLastError();
+        return MODULEENTRY32{ 0 };
+    }
+
+    do // loops through modules
+    {
+        if (_strcmpi(modName, mod32.szModule) == 0)
+        {
+            found = true;
+            break;
+        }
+    } while (Module32Next(hModuleSnap, &mod32));
+
+    CloseHandle(hModuleSnap);
+    if (!found)
+    {
+        std::cerr << "Could not find module " << modName << "\n";
+        mod32 = MODULEENTRY32{ 0 };
+    }
+    return mod32;
 }

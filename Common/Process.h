@@ -1,6 +1,7 @@
 #pragma once
 
 #include <windows.h>
+#include <tlhelp32.h>
 
 class Process
 {
@@ -22,4 +23,5 @@ public:
     BOOL FreeMemory(LPVOID address);
     BOOL WriteMemory(LPVOID dest, BYTE* buffer, size_t size);
     // TODO: ReadMemory
+    MODULEENTRY32 GetModule(char* modName);
 };
