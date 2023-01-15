@@ -12,6 +12,7 @@ private:
 public:
     DWORD pid = 0;
     HANDLE handle = nullptr;
+    MODULEENTRY32 mainModule;
 
     Process(char* procName);
     ~Process();

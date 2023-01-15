@@ -37,6 +37,8 @@ Process::Process(char* procName)
     }
 
     this->pid = pid;
+
+    this->mainModule = this->GetModule(procName);
 }
 
 Process::~Process()
