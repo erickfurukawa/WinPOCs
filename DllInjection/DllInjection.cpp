@@ -12,6 +12,7 @@ HANDLE InjectDll(Process* proc, char* dllPath) {
     if (!hThread)
     {
         std::cerr << "CreateRemoteThread error " << GetLastError() << std::endl;
+        std::cerr << "Could not inject dll " << dllPath << " into the target process " << proc->mainModule.szModule << std::endl;
     }
     return hThread;
 }
