@@ -83,6 +83,11 @@ BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, size_t size)
     return WriteProcessMemory(this->handle, dest, buffer, size, nullptr);
 }
 
+int Process::ReadMemory(LPCVOID addr, BYTE* buffer, size_t size)
+{
+    return ReadProcessMemory(this->handle, addr, buffer, size, nullptr);
+}
+
 MODULEENTRY32 Process::GetModule(char* modName)
 {
     HANDLE hModuleSnap;

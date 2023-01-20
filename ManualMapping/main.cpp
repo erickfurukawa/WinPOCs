@@ -127,7 +127,7 @@ int main(int argc, char** argv)
             std::cout << "Waiting for shellcode to return... status: " << status << "\n";
             Sleep(1000);
             ManualMappingData dataCheck;
-            ReadProcessMemory(proc->handle, dataAddr, &dataCheck, sizeof(ManualMappingData), nullptr);
+            proc->ReadMemory(dataAddr, reinterpret_cast<BYTE*>(&dataCheck), sizeof(ManualMappingData));
             status = dataCheck.status;
         }
         std::cout << "Shellcode finished! status: " << status << "\n\n";

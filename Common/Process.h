@@ -23,6 +23,7 @@ public:
     LPVOID AllocMemory(size_t size, LPVOID address = nullptr, DWORD flProtect = PAGE_EXECUTE_READWRITE);
     BOOL FreeMemory(LPVOID address);
     BOOL WriteMemory(LPVOID dest, BYTE* buffer, size_t size);
-    // TODO: ReadMemory
+    int ReadMemory(LPCVOID addr, BYTE* buffer, size_t size);
+
     MODULEENTRY32 GetModule(char* modName);
 };
