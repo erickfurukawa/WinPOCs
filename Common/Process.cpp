@@ -65,27 +65,54 @@ void Process::Close()
     }
 }
 
-// VirtualAllocEx with default parameters for convenience
 LPVOID Process::AllocMemory(SIZE_T size, LPVOID address, DWORD flProtect)
 {
-    return VirtualAllocEx(this->handle, address, size, MEM_COMMIT | MEM_RESERVE, flProtect);
+    LPVOID addr = VirtualAllocEx(this->handle, address, size, MEM_COMMIT | MEM_RESERVE, flProtect);
+    if (!addr)
+    {
+        std::cerr << "VirtualAllocEx error " << GetLastError() << "\n";
+    }
+    return addr;
 }
 
-// VirtualFreeEx with default parameters for convenience
 BOOL Process::FreeMemory(LPVOID address) 
 {
-    return VirtualFreeEx(this->handle, address, 0, MEM_RELEASE);
+    BOOL success = VirtualFreeEx(this->handle, address, 0, MEM_RELEASE);
+    if (!success)
+    {
+        std::cerr << "VirtualFreeEx error " << GetLastError() << "\n";
+    }
+    return success;
 }
 
-// WriteProcessMemory with default parameters for convenience
 BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, SIZE_T size)
 {
-    return WriteProcessMemory(this->handle, dest, buffer, size, nullptr);
+    BOOL success = WriteProcessMemory(this->handle, dest, buffer, size, nullptr);
+    if (!success)
+    {
+        std::cerr << "WriteProcessMemory error " << GetLastError() << "\n";
+    }
+    return success;
 }
 
-int Process::ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size)
+BOOL Process::ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size)
 {
-    return ReadProcessMemory(this->handle, addr, buffer, size, nullptr);
+    BOOL success = ReadProcessMemory(this->handle, addr, buffer, size, nullptr);
+    if (!success)
+    {
+        std::cerr << "ReadProcessMemory error " << GetLastError() << "\n";
+    }
+    return success;
+}
+
+SIZE_T Process::VirtualQuery(LPCVOID addr, PMEMORY_BASIC_INFORMATION pMemInfo)
+{
+    SIZE_T memInfoSize = VirtualQueryEx(this->handle, addr, pMemInfo, sizeof(PMEMORY_BASIC_INFORMATION));
+    if (!memInfoSize)
+    {
+        std::cerr << "VirtualQueryEx error " << GetLastError() << "\n";
+    }
+    return memInfoSize;
 }
 
 MODULEENTRY32 Process::GetModule(char* modName)
