@@ -66,7 +66,7 @@ void Process::Close()
 }
 
 // VirtualAllocEx with default parameters for convenience
-LPVOID Process::AllocMemory(size_t size, LPVOID address, DWORD flProtect)
+LPVOID Process::AllocMemory(SIZE_T size, LPVOID address, DWORD flProtect)
 {
     return VirtualAllocEx(this->handle, address, size, MEM_COMMIT | MEM_RESERVE, flProtect);
 }
@@ -78,12 +78,12 @@ BOOL Process::FreeMemory(LPVOID address)
 }
 
 // WriteProcessMemory with default parameters for convenience
-BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, size_t size)
+BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, SIZE_T size)
 {
     return WriteProcessMemory(this->handle, dest, buffer, size, nullptr);
 }
 
-int Process::ReadMemory(LPCVOID addr, BYTE* buffer, size_t size)
+int Process::ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size)
 {
     return ReadProcessMemory(this->handle, addr, buffer, size, nullptr);
 }
