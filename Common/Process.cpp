@@ -107,7 +107,7 @@ BOOL Process::ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size)
 
 SIZE_T Process::VirtualQuery(LPCVOID addr, PMEMORY_BASIC_INFORMATION pMemInfo)
 {
-    SIZE_T memInfoSize = VirtualQueryEx(this->handle, addr, pMemInfo, sizeof(PMEMORY_BASIC_INFORMATION));
+    SIZE_T memInfoSize = VirtualQueryEx(this->handle, addr, pMemInfo, sizeof(MEMORY_BASIC_INFORMATION));
     if (!memInfoSize)
     {
         std::cerr << "VirtualQueryEx error " << GetLastError() << "\n";
