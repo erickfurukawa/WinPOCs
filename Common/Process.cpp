@@ -115,6 +115,52 @@ SIZE_T Process::VirtualQuery(LPCVOID addr, PMEMORY_BASIC_INFORMATION pMemInfo)
     return memInfoSize;
 }
 
+BYTE* Process::ScanMemory(BYTE* pattern, char* mask, PVOID addr, uintptr_t size)
+{
+    MEMORY_BASIC_INFORMATION memInfo;
+    BYTE* currAddr = reinterpret_cast<BYTE*>(addr);
+    BYTE* matchAddr = nullptr;
+
+    while (currAddr < reinterpret_cast<BYTE*>(addr) + size)
+    {
+        if (!this->VirtualQuery(currAddr, &memInfo))
+        {
+            std::cerr << "Could not scan memory\n";
+            break;
+        }
+
+        // checks if it is inaccessible memory
+        if (memInfo.State != MEM_COMMIT || memInfo.Protect == PAGE_NOACCESS)
+        {
+            currAddr += memInfo.RegionSize;
+            continue;
+        }
+
+        DWORD oldProtect;
+        if (VirtualProtectEx(this->handle, currAddr, memInfo.RegionSize, PAGE_EXECUTE_READWRITE, &oldProtect))
+        {
+            BYTE* buffer = new BYTE[memInfo.RegionSize];
+            this->ReadMemory(currAddr, buffer, memInfo.RegionSize);
+            VirtualProtectEx(this->handle, currAddr, memInfo.RegionSize, oldProtect, &oldProtect);
+
+            BYTE* internalMatchAddr = ScanPattern(pattern, mask, buffer, memInfo.RegionSize);
+            if (internalMatchAddr)
+            {
+                matchAddr = currAddr + (internalMatchAddr - buffer);
+                delete[] buffer;
+                break;
+            }
+            delete[] buffer;
+        }
+        else
+        {
+            std::cerr << "Could not change protection for address 0x" << std::hex << reinterpret_cast<uintptr_t>(currAddr) << ". Skipping...\n";
+        }
+        currAddr += memInfo.RegionSize;
+    }
+    return matchAddr;
+}
+
 MODULEENTRY32 Process::GetModule(char* modName)
 {
     HANDLE hModuleSnap;

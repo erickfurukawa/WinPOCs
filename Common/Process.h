@@ -25,6 +25,6 @@ public:
     BOOL WriteMemory(LPVOID dest, BYTE* buffer, SIZE_T size);
     BOOL ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size);
     SIZE_T VirtualQuery(LPCVOID addr, PMEMORY_BASIC_INFORMATION pMemInfo);
-
+    BYTE* ScanMemory(BYTE* pattern, char* mask, PVOID addr, uintptr_t size);
     MODULEENTRY32 GetModule(char* modName);
 };
