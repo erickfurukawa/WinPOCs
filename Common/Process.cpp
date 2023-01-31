@@ -75,6 +75,34 @@ LPVOID Process::AllocMemory(SIZE_T size, LPVOID address, DWORD flProtect)
     return addr;
 }
 
+LPVOID Process::AllocMemory(SIZE_T size, LPVOID begin, LPVOID end, DWORD flProtect)
+{
+    LPVOID addr = nullptr;
+    SYSTEM_INFO sysInfo;
+    GetSystemInfo(&sysInfo);
+    uintptr_t currAddr = (reinterpret_cast<uintptr_t>(begin) & ~(static_cast<uintptr_t>(sysInfo.dwAllocationGranularity) - 1));
+    if (reinterpret_cast<uintptr_t>(begin) % static_cast<uintptr_t>(sysInfo.dwAllocationGranularity) != 0)
+    {   // need to go up dwAllocationGranularity bytes so that VirtualAllocEx doesn't return an address < begin
+        currAddr += static_cast<uintptr_t>(sysInfo.dwAllocationGranularity);
+    }
+
+    while (currAddr < reinterpret_cast<uintptr_t>(end))
+    {
+        addr = VirtualAllocEx(this->handle, reinterpret_cast<LPVOID>(currAddr), size, MEM_COMMIT | MEM_RESERVE, flProtect);
+        if (addr)
+        { 
+            break;
+        }
+        currAddr += sysInfo.dwAllocationGranularity;
+    }
+
+    if (!addr)
+    {
+        std::cerr << "AllocMemory error: could not allocate memory in range." << "\n";
+    }
+    return addr;
+}
+
 BOOL Process::FreeMemory(LPVOID address) 
 {
     BOOL success = VirtualFreeEx(this->handle, address, 0, MEM_RELEASE);

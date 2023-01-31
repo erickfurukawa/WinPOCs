@@ -21,6 +21,8 @@ public:
     void Close();
 
     LPVOID AllocMemory(SIZE_T size, LPVOID address = nullptr, DWORD flProtect = PAGE_EXECUTE_READWRITE);
+    // alloc memory within a range
+    LPVOID AllocMemory(SIZE_T size, LPVOID begin, LPVOID end, DWORD flProtect = PAGE_EXECUTE_READWRITE);
     BOOL FreeMemory(LPVOID address);
     BOOL WriteMemory(LPVOID dest, BYTE* buffer, SIZE_T size);
     BOOL ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size);
