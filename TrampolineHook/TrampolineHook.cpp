@@ -18,6 +18,20 @@
 // TODO x86 ABS_JMP_BYTES defines
 #endif
 
+namespace // anonymous namespace for utility functions
+{
+#ifdef _WIN64
+    void BuildAbsoluteJump(BYTE* buffer, uintptr_t absAddr)
+    {
+        memcpy(buffer, ABS_JMP_BYTES, ABS_JMP_SIZE);
+        memcpy(buffer + 4, reinterpret_cast<BYTE*>(&absAddr), sizeof(DWORD)); // absAddr low
+        memcpy(buffer + 12, reinterpret_cast<BYTE*>(&absAddr) + sizeof(DWORD), sizeof(DWORD)); // absAddr high
+    };
+#else
+    // TODO x86
+#endif
+}
+
 bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFunction, char* hookDll, char* hookFunction)
 {
     bool success = false;
@@ -49,9 +63,7 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
 
         // get targetFunction address
         uintptr_t targetFuncAddr;
-        VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(IATaddr), sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
         proc->ReadMemory(reinterpret_cast<LPCVOID>(IATaddr), reinterpret_cast<BYTE*>(&targetFuncAddr), sizeof(void*));
-        VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(IATaddr), sizeof(void*), oldProtect, &oldProtect);
 
         if (hookFunctionRVA && targetFunctionRVA && trampolineAddrPtrRVA)
         {
@@ -94,19 +106,12 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
             BYTE* trampoline = new BYTE[stolenBytesSize + ABS_JMP_SIZE];
             uintptr_t origFuncPlusStolenBytes = targetFuncAddr + stolenBytesSize;
             proc->ReadMemory(reinterpret_cast<BYTE*>(targetFuncAddr), trampoline, stolenBytesSize); // read stolen bytes
-#ifdef _WIN64
-            memcpy(trampoline + stolenBytesSize, ABS_JMP_BYTES, ABS_JMP_SIZE); // abs jump
-            memcpy(trampoline + stolenBytesSize + 4, reinterpret_cast<BYTE*>(&origFuncPlusStolenBytes), sizeof(DWORD)); // original func addr low
-            memcpy(trampoline + stolenBytesSize + 12, reinterpret_cast<BYTE*>(&origFuncPlusStolenBytes) + sizeof(DWORD), sizeof(DWORD)); // original func addr high
-#else
-            //TODO: x86
-#endif
+            BuildAbsoluteJump(trampoline + stolenBytesSize, origFuncPlusStolenBytes); // add jmp to original function
             proc->WriteMemory(trampolineAddr, trampoline, stolenBytesSize + ABS_JMP_SIZE);
             delete[] trampoline;
 
             // write trampolineAddr to trampolineAddrPtr
             DWORD oldProtect;
-
             VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(trampolineAddrPtr), sizeof(void*), PAGE_EXECUTE_READWRITE ,&oldProtect);
             proc->WriteMemory(reinterpret_cast<BYTE*>(trampolineAddrPtr), (BYTE*) &trampolineAddr, sizeof(void*));
             VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(trampolineAddrPtr), sizeof(void*), oldProtect, &oldProtect);
@@ -114,18 +119,13 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
             // write stub + nops
             int extraNops = stolenBytesSize - ABS_JMP_SIZE;
             BYTE* hookStub = new BYTE[ABS_JMP_SIZE + extraNops];
-#ifdef _WIN64
-            memcpy(hookStub, ABS_JMP_BYTES, ABS_JMP_SIZE); // hookStub: jump to hook
-            memcpy(hookStub + 4, reinterpret_cast<BYTE*>(&hookAddr), sizeof(DWORD)); // hook function address low
-            memcpy(hookStub + 12, (reinterpret_cast<BYTE*>(&hookAddr) + sizeof(DWORD)), sizeof(DWORD)); // hook function address high
+            BuildAbsoluteJump(hookStub, hookAddr); // add hook
             memset(hookStub + ABS_JMP_SIZE, NOP, extraNops); // nops
-#else
-            //TODO: x86
-#endif
             VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(targetFuncAddr), sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
             proc->WriteMemory(reinterpret_cast<BYTE*>(targetFuncAddr), hookStub, ABS_JMP_SIZE + extraNops);
             VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(targetFuncAddr), sizeof(void*), oldProtect, &oldProtect);
             delete[] hookStub;
+
             success = true;
         }
         else
