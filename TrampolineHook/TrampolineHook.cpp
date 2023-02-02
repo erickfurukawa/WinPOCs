@@ -10,10 +10,14 @@
 
 #define MAX_STOLEN_BYTES 30
 #define NOP 0x90
+#define MIN_JMP_RANGE(ADDR) ADDR + MININT32 + 5
+#define MAX_JMP_RANGE(ADDR) ADDR + MAXINT32 + 5
 
 #ifdef _WIN64
 #define ABS_JMP_SIZE 17
 #define ABS_JMP_BYTES "\x50\xC7\x04\x24\xEF\xBE\xAD\xDE\xC7\x44\x24\x04\xEF\xBE\xAD\xDE\xC3"
+#define REL_JMP_SIZE 5
+#define REL_JMP_BYTES "\xE9\xEF\xBE\xAD\xDE"
 #else
 // TODO x86 ABS_JMP_BYTES defines
 #endif
@@ -27,6 +31,18 @@ namespace // anonymous namespace for utility functions
         memcpy(buffer + 4, reinterpret_cast<BYTE*>(&absAddr), sizeof(DWORD)); // absAddr low
         memcpy(buffer + 12, reinterpret_cast<BYTE*>(&absAddr) + sizeof(DWORD), sizeof(DWORD)); // absAddr high
     };
+
+    bool BuildRelativeJump(BYTE* buffer, uintptr_t currAddr, uintptr_t targetAddr)
+    {
+        if (targetAddr < MAX_JMP_RANGE(currAddr) && targetAddr > MIN_JMP_RANGE(currAddr))
+        {
+            INT32 relAddr = targetAddr - currAddr - 5;
+            memcpy(buffer, REL_JMP_BYTES, REL_JMP_SIZE);
+            memcpy(buffer + 1, reinterpret_cast<BYTE*>(&relAddr), sizeof(INT32)); // rel addr
+            return true;
+        }
+        return false;
+    };
 #else
     // TODO x86
 #endif
@@ -38,6 +54,7 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
     PE* dll = new PE(hookDll);
     HANDLE hThread = InjectDll(proc, dll->filePath);
     BYTE* trampolineAddr = nullptr;
+    BYTE* relayAddr = nullptr;
     DWORD oldProtect;
 
     if (hThread)
@@ -86,7 +103,7 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
                     for (j = 0; j < count; j++)
                     {
                         stolenBytesSize += insn[j].size;
-                        if (stolenBytesSize >= ABS_JMP_SIZE)
+                        if (stolenBytesSize >= REL_JMP_SIZE)
                             break;
                     }
                     cs_free(insn, count);
@@ -94,15 +111,26 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
                 cs_close(&handle);
             }
 
-            if (stolenBytesSize < ABS_JMP_SIZE)
+            if (stolenBytesSize < REL_JMP_SIZE)
             { 
                 std::cerr << "Could not determine the number of stolen bytes\n";
                 goto cleanup;
             }
+
+            // alloc memory for relay in reachable memory
+            relayAddr = reinterpret_cast<BYTE*>(
+                    proc->AllocMemory(ABS_JMP_SIZE, 
+                        reinterpret_cast<LPVOID>(MIN_JMP_RANGE(targetFuncAddr)),
+                        reinterpret_cast<LPVOID>(MAX_JMP_RANGE(targetFuncAddr))
+                    )
+                );
+
+            BYTE relay[ABS_JMP_SIZE];
+            BuildAbsoluteJump(relay, hookAddr); // relay -> hookFunction
+            proc->WriteMemory(relayAddr, relay, ABS_JMP_SIZE); // write relay
+
             // alloc memory for trampoline
             trampolineAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(stolenBytesSize + ABS_JMP_SIZE));
-
-            // write trampoline
             BYTE* trampoline = new BYTE[stolenBytesSize + ABS_JMP_SIZE];
             uintptr_t origFuncPlusStolenBytes = targetFuncAddr + stolenBytesSize;
             proc->ReadMemory(reinterpret_cast<BYTE*>(targetFuncAddr), trampoline, stolenBytesSize); // read stolen bytes
@@ -117,12 +145,12 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
             VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(trampolineAddrPtr), sizeof(void*), oldProtect, &oldProtect);
 
             // write stub + nops
-            int extraNops = stolenBytesSize - ABS_JMP_SIZE;
-            BYTE* hookStub = new BYTE[ABS_JMP_SIZE + extraNops];
-            BuildAbsoluteJump(hookStub, hookAddr); // add hook
-            memset(hookStub + ABS_JMP_SIZE, NOP, extraNops); // nops
+            int extraNops = stolenBytesSize - REL_JMP_SIZE;
+            BYTE* hookStub = new BYTE[REL_JMP_SIZE + extraNops];
+            BuildRelativeJump(hookStub, targetFuncAddr, reinterpret_cast<uintptr_t>(relayAddr)); // add hook: original -> relay
+            memset(hookStub + REL_JMP_SIZE, NOP, extraNops); // nops
             VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(targetFuncAddr), sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
-            proc->WriteMemory(reinterpret_cast<BYTE*>(targetFuncAddr), hookStub, ABS_JMP_SIZE + extraNops);
+            proc->WriteMemory(reinterpret_cast<BYTE*>(targetFuncAddr), hookStub, REL_JMP_SIZE + extraNops);
             VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(targetFuncAddr), sizeof(void*), oldProtect, &oldProtect);
             delete[] hookStub;
 
@@ -142,6 +170,10 @@ cleanup:
         if (trampolineAddr)
         {
             proc->FreeMemory(trampolineAddr);
+        }
+        if (relayAddr)
+        {
+            proc->FreeMemory(relayAddr);
         }
     }
     return success;
