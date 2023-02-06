@@ -113,22 +113,63 @@ BOOL Process::FreeMemory(LPVOID address)
     return success;
 }
 
-BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, SIZE_T size)
+BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, SIZE_T size, bool changeProtect)
 {
+    DWORD oldProtect = 0;
+    if (changeProtect) // change protection to write
+    {
+        if (!this->VirtualProtect(dest, size, PAGE_EXECUTE_READWRITE, &oldProtect))
+            return FALSE;
+    }
+
     BOOL success = WriteProcessMemory(this->handle, dest, buffer, size, nullptr);
     if (!success)
     {
         std::cerr << "WriteProcessMemory error " << GetLastError() << "\n";
     }
+
+    if (changeProtect) // restore protection
+    {
+        if (!this->VirtualProtect(dest, size, oldProtect, &oldProtect))
+            return FALSE;
+    }
     return success;
 }
 
-BOOL Process::ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size)
+BOOL Process::ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size, bool changeProtect)
 {
+    DWORD oldProtect = 0;
+    if (changeProtect) // change protection to read
+    {
+        if (!this->VirtualProtect(const_cast<LPVOID>(addr), size, PAGE_EXECUTE_READWRITE, &oldProtect))
+            return FALSE;
+    }
+
     BOOL success = ReadProcessMemory(this->handle, addr, buffer, size, nullptr);
     if (!success)
     {
         std::cerr << "ReadProcessMemory error " << GetLastError() << "\n";
+    }
+
+    if (changeProtect) // restore protection
+    {
+        if (!this->VirtualProtect(const_cast<LPVOID>(addr), size, oldProtect, &oldProtect))
+            return FALSE;
+    }
+    return success;
+}
+
+BOOL Process::VirtualProtect(LPVOID addr, SIZE_T size, DWORD newProtect, PDWORD pOldProtect)
+{
+    DWORD oldProtect = 0;
+    BOOL success = VirtualProtectEx(this->handle, addr, size, newProtect, &oldProtect);
+    if (pOldProtect)
+    {
+        *pOldProtect = oldProtect;
+    }
+    if (!success)
+    {
+        std::cerr << "VirtualProtectEx error " << GetLastError() << "\n";
     }
     return success;
 }
