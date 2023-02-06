@@ -55,11 +55,10 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
     HANDLE hThread = InjectDll(proc, dll->filePath);
     BYTE* trampolineAddr = nullptr;
     BYTE* relayAddr = nullptr;
-    DWORD oldProtect;
 
     if (hThread)
     {
-        WaitForSingleObject(hThread, 1000);
+        WaitForSingleObject(hThread, 3000);
         CloseHandle(hThread);
 
         // get hookFunction address
@@ -96,6 +95,7 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
             int stolenBytesSize = 0;
             if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) == CS_ERR_OK)
             {
+                cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
                 count = cs_disasm(handle, reinterpret_cast<uint8_t*>(code), MAX_STOLEN_BYTES, 0x1000, 0, &insn);
                 if (count > 0)
                 {
@@ -139,19 +139,14 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
             delete[] trampoline;
 
             // write trampolineAddr to trampolineAddrPtr
-            DWORD oldProtect;
-            VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(trampolineAddrPtr), sizeof(void*), PAGE_EXECUTE_READWRITE ,&oldProtect);
-            proc->WriteMemory(reinterpret_cast<BYTE*>(trampolineAddrPtr), (BYTE*) &trampolineAddr, sizeof(void*));
-            VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(trampolineAddrPtr), sizeof(void*), oldProtect, &oldProtect);
+            proc->WriteMemory(reinterpret_cast<BYTE*>(trampolineAddrPtr), (BYTE*) &trampolineAddr, sizeof(void*), true);
 
             // write stub + nops
             int extraNops = stolenBytesSize - REL_JMP_SIZE;
             BYTE* hookStub = new BYTE[REL_JMP_SIZE + extraNops];
             BuildRelativeJump(hookStub, targetFuncAddr, reinterpret_cast<uintptr_t>(relayAddr)); // add hook: original -> relay
             memset(hookStub + REL_JMP_SIZE, NOP, extraNops); // nops
-            VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(targetFuncAddr), sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtect);
-            proc->WriteMemory(reinterpret_cast<BYTE*>(targetFuncAddr), hookStub, REL_JMP_SIZE + extraNops);
-            VirtualProtectEx(proc->handle, reinterpret_cast<LPVOID>(targetFuncAddr), sizeof(void*), oldProtect, &oldProtect);
+            proc->WriteMemory(reinterpret_cast<BYTE*>(targetFuncAddr), hookStub, REL_JMP_SIZE + extraNops, true);
             delete[] hookStub;
 
             success = true;
