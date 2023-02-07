@@ -36,5 +36,3 @@ public:
 
     PEHeaders headers;
 };
-
-bool GetPEHeaders(BYTE* buffer, PEHeaders* headers);
