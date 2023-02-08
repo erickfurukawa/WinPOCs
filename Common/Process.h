@@ -13,8 +13,9 @@ public:
     DWORD pid = 0;
     HANDLE handle = nullptr;
     MODULEENTRY32 mainModule;
+    bool is32Bits;
 
-    Process(char* procName);
+    Process(const char* procName);
     ~Process();
 
     bool Open(DWORD access = PROCESS_ALL_ACCESS);
@@ -29,5 +30,5 @@ public:
     BOOL VirtualProtect(LPVOID addr, SIZE_T size, DWORD newProtect, PDWORD pOldProtect = nullptr);
     SIZE_T VirtualQuery(LPCVOID addr, PMEMORY_BASIC_INFORMATION pMemInfo);
     BYTE* ScanMemory(BYTE* pattern, char* mask, PVOID addr, uintptr_t size);
-    MODULEENTRY32 GetModule(char* modName);
+    MODULEENTRY32 GetModule(const char* modName);
 };

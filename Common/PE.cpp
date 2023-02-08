@@ -24,11 +24,18 @@ namespace
         }
 
         headers->pDOSHeader = pDOSHeader;
-        headers->pNTHeaders = pNTHeaders;
-
-        headers->pFileHeader = reinterpret_cast<PIMAGE_FILE_HEADER>(&headers->pNTHeaders->FileHeader);
-        headers->pOptionalHeader = reinterpret_cast<PIMAGE_OPTIONAL_HEADER>(&headers->pNTHeaders->OptionalHeader);
-
+        if (pNTHeaders->FileHeader.Machine == IMAGE_FILE_MACHINE_I386) // 32 bits
+        {
+            headers->pNTHeaders32 = reinterpret_cast<PIMAGE_NT_HEADERS32>(pNTHeaders);
+            headers->pFileHeader = &headers->pNTHeaders32->FileHeader;
+            headers->pOptionalHeader32 = &headers->pNTHeaders32->OptionalHeader;
+        }
+        else // 64 bits
+        {
+            headers->pNTHeaders64 = reinterpret_cast<PIMAGE_NT_HEADERS64>(pNTHeaders);
+            headers->pFileHeader = &headers->pNTHeaders64->FileHeader;
+            headers->pOptionalHeader64 = &headers->pNTHeaders64->OptionalHeader;
+        }
         return true;
     }
 }
@@ -65,6 +72,17 @@ PE::PE(char* fileName)
     {
         ThrowException("Could not get valid PE headers");
     }
+
+    this->is32Bits = this->headers.pFileHeader->Machine == IMAGE_FILE_MACHINE_I386;
+
+    if (this->is32Bits)
+    {
+        this->pDataDirectory = this->headers.pOptionalHeader32->DataDirectory;
+    } 
+    else
+    {
+        this->pDataDirectory = this->headers.pOptionalHeader64->DataDirectory;
+    }
 }
 
 PE::~PE()
@@ -77,8 +95,8 @@ PE::~PE()
 }
 
 BYTE* PE::RVAToBufferPointer(DWORD rva) {
-    PIMAGE_FILE_HEADER pFileHeader = reinterpret_cast<PIMAGE_FILE_HEADER>(&this->headers.pNTHeaders->FileHeader);
-    PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(this->headers.pNTHeaders);
+    PIMAGE_FILE_HEADER pFileHeader = this->headers.pFileHeader;
+    PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(this->headers.pNTHeaders64);
 
     for (int i = 0; i < pFileHeader->NumberOfSections; i++) 
     {
@@ -93,21 +111,22 @@ BYTE* PE::RVAToBufferPointer(DWORD rva) {
 }
 
 // TODO: forwarder RVA https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#export-address-table
-DWORD PE::GetExportRVA(char* exportName)
+DWORD PE::GetExportRVA(const char* exportName)
 {
     PIMAGE_EXPORT_DIRECTORY pExportDirectory = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
-        this->RVAToBufferPointer(this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
+        this->RVAToBufferPointer(this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
     DWORD* pfuncNameRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfNames));
     DWORD* pfuncRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
+    WORD* pOrdinal = reinterpret_cast<WORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfNameOrdinals));
 
     for (int i = 0; i < pExportDirectory->NumberOfNames; i++)
     {
         if (_strcmpi(exportName, reinterpret_cast<char*>(this->RVAToBufferPointer(*pfuncNameRVA))) == 0)
         {
-            return *pfuncRVA;
+            return pfuncRVA[*pOrdinal];
         }
         pfuncNameRVA++;
-        pfuncRVA++;
+        pOrdinal++;
     }
     return 0;
 }
@@ -116,7 +135,7 @@ DWORD PE::GetExportRVA(char* exportName)
 DWORD PE::GetExportRVA(DWORD ordinal) 
 {
     PIMAGE_EXPORT_DIRECTORY pExportDirectory = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
-        this->RVAToBufferPointer(this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
+        this->RVAToBufferPointer(this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
     DWORD* pfuncRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
 
     DWORD unbiasedOrdinal = ordinal - pExportDirectory->Base;
@@ -127,12 +146,15 @@ DWORD PE::GetExportRVA(DWORD ordinal)
     return 0;
 }
 
-DWORD PE::GetImportRVA(char* moduleName, char* importName)
+DWORD PE::GetImportRVA(const char* moduleName, const char* importName)
 {
-    if (this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
+    int ptrSize = this->is32Bits ? 4 : 8;
+    unsigned long long snapByOrdinalFlag = this->is32Bits ? IMAGE_ORDINAL_FLAG32 : IMAGE_ORDINAL_FLAG64;
+
+    if (this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
     {
         PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(
-            this->RVAToBufferPointer(this->headers.pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress));
+            this->RVAToBufferPointer(this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress));
 
         while (pImportDescriptor->Name)
         {
@@ -143,16 +165,17 @@ DWORD PE::GetImportRVA(char* moduleName, char* importName)
                 DWORD IATEntryRVA = pImportDescriptor->FirstThunk;
                 while (*pThunkRef)
                 {
-                    if (!IMAGE_SNAP_BY_ORDINAL(*pThunkRef)) 
+                    if (!(snapByOrdinalFlag & *pThunkRef))
                     {
-                        PIMAGE_IMPORT_BY_NAME pImport = reinterpret_cast<PIMAGE_IMPORT_BY_NAME>(this->RVAToBufferPointer(*pThunkRef));
+                        DWORD hintRVA = (*pThunkRef) & ((1llu << 32) - 1); // hint is only 31 lowest bits
+                        PIMAGE_IMPORT_BY_NAME pImport = reinterpret_cast<PIMAGE_IMPORT_BY_NAME>(this->RVAToBufferPointer(hintRVA));
                         if (_strcmpi(importName, pImport->Name) == 0)
                         {
                             return IATEntryRVA;
                         }
                     }
-                    pThunkRef++;
-                    IATEntryRVA += sizeof(void*);
+                    pThunkRef = reinterpret_cast<UINT_PTR*>(reinterpret_cast<uintptr_t>(pThunkRef) + ptrSize);
+                    IATEntryRVA += ptrSize;
                 }
             }
             pImportDescriptor++;
