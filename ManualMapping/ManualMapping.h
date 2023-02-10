@@ -1,15 +1,6 @@
 #pragma once
 
 #include <windows.h>
+#include "../Common/Process.h"
 
-using f_DLL_ENTRY_POINT = BOOL(WINAPI*)(void* hDll, DWORD dwReason, void* pReserved);
-
-typedef struct ManualMappingData
-{
-    DWORD status;
-    BYTE* baseAddr;
-    HMODULE(__stdcall* pLoadLibraryA)(LPCSTR lpLibFilename);
-    FARPROC(__stdcall* pGetProcAddress)(HMODULE hmodule, LPCSTR lpProcName);
-} ManualMappingData;
-
-void __stdcall Shellcode(ManualMappingData* data);
+bool ManualMapDll(Process* proc, const char* dllPath);

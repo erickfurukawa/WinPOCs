@@ -1,94 +1,287 @@
 #include "ManualMapping.h"
+#include <iostream>
 #include "../Common/Constants.h"
+#include "../Common/PE.h"
 
-/*
-    The shellcode is injected in the target process to perform relocations,
-    fix the IAT, call the TLS callbacks, and call the DLL entrypoint.
-    Because it is compiled in the injector and is injected in an external process,
-    the shellcode must only have position independent code. When compiling debug
-    builds in Visual Studio, it adds extra function calls for debug purposes, and
-    that makes the code not position independent. Because of this behaviour, the
-    shellcode will only work if the injector is built in release mode.
-*/
-void __stdcall Shellcode(ManualMappingData* data) {
-    if (!data)
-        return;
+namespace
+{
+    using f_DLL_ENTRY_POINT = BOOL(WINAPI*)(void* hDll, DWORD dwReason, void* pReserved);
+    using f_LoadLibraryA = HMODULE(__stdcall*)(LPCSTR lpLibFilename);
+    using f_GetProcAddress = FARPROC(__stdcall*)(HMODULE hmodule, LPCSTR lpProcName);
 
-    data->status = 2;
-    PIMAGE_DOS_HEADER pDOSHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(data->baseAddr);
-    PIMAGE_NT_HEADERS pNTHeaders = reinterpret_cast<PIMAGE_NT_HEADERS>(data->baseAddr + pDOSHeader->e_lfanew);
-    PIMAGE_OPTIONAL_HEADER pOptHeader = reinterpret_cast<PIMAGE_OPTIONAL_HEADER>(&pNTHeaders->OptionalHeader);
-
-    // Relocations
-    data->status = 3;
-    BYTE* baseDelta = data->baseAddr - pOptHeader->ImageBase;
-    if (baseDelta)
+    typedef struct ManualMappingData
     {
-        if (pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size)
-        {
-            PIMAGE_BASE_RELOCATION pBaseRelocation = reinterpret_cast<PIMAGE_BASE_RELOCATION>(data->baseAddr + pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
-            while (pBaseRelocation->VirtualAddress)
-            {
-                BYTE* relocAddress = data->baseAddr + pBaseRelocation->VirtualAddress;
-                int entries = (pBaseRelocation->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
-                WORD* typeOffset = reinterpret_cast<WORD*>(pBaseRelocation + 1);
+        DWORD status;
+        INT64 baseAddr;
+        INT64 pLoadLibraryA;
+        INT64 pGetProcAddress;
+    } ManualMappingData;
 
-                for (int i = 0; i < entries; i++, typeOffset++)
+    BYTE x64shellcode[] =
+    {
+        0x48, 0x85, 0xc9, 0x0f, 0x84, 0xd8, 0x01, 0x00, 0x00, 0x56, 0x48, 0x83, 0xec, 0x30, 0xc7, 0x01, 0x02, 0x00, 0x00, 0x00, 0x48, 0x8b, 0xf1, 0x48, 0x8b, 0x49, 0x08, 0x48, 0x89, 0x5c,
+        0x24, 0x40, 0x4c, 0x8b, 0xd9, 0x48, 0x89, 0x7c, 0x24, 0x50, 0x4c, 0x8b, 0xc1, 0x4c, 0x89, 0x7c, 0x24, 0x20, 0x4c, 0x63, 0x79, 0x3c, 0x4c, 0x03, 0xf9, 0xc7, 0x06, 0x03, 0x00, 0x00,
+        0x00, 0x4d, 0x2b, 0x5f, 0x30, 0x0f, 0x84, 0x81, 0x00, 0x00, 0x00, 0x41, 0x83, 0xbf, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x74, 0x77, 0x45, 0x8b, 0x8f, 0xb0, 0x00, 0x00, 0x00, 0x4c, 0x03,
+        0xc9, 0x41, 0x8b, 0x01, 0x85, 0xc0, 0x74, 0x66, 0xbb, 0x00, 0xf0, 0x00, 0x00, 0xbf, 0x00, 0xa0, 0x00, 0x00, 0x0f, 0x1f, 0x40, 0x00, 0x44, 0x8b, 0xd0, 0x49, 0x8d, 0x51, 0x08, 0x41,
+        0x8b, 0x41, 0x04, 0x4c, 0x03, 0xd1, 0x48, 0x83, 0xe8, 0x08, 0x4c, 0x8b, 0xc1, 0x48, 0xd1, 0xe8, 0x85, 0xc0, 0x7e, 0x2b, 0x44, 0x8b, 0xc0, 0x90, 0x0f, 0xb7, 0x02, 0x0f, 0xb7, 0xc8,
+        0x66, 0x23, 0xcb, 0x66, 0x3b, 0xcf, 0x75, 0x0b, 0x25, 0xff, 0x0f, 0x00, 0x00, 0x49, 0x03, 0xc2, 0x4c, 0x01, 0x18, 0x48, 0x83, 0xc2, 0x02, 0x49, 0x83, 0xe8, 0x01, 0x75, 0xdd, 0x4c,
+        0x8b, 0x46, 0x08, 0x41, 0x8b, 0x41, 0x04, 0x49, 0x8b, 0xc8, 0x4c, 0x03, 0xc8, 0x41, 0x8b, 0x01, 0x85, 0xc0, 0x75, 0xa8, 0xc7, 0x06, 0x04, 0x00, 0x00, 0x00, 0x49, 0x8b, 0xd0, 0x41,
+        0x83, 0xbf, 0x94, 0x00, 0x00, 0x00, 0x00, 0x0f, 0x84, 0x92, 0x00, 0x00, 0x00, 0x48, 0x89, 0x6c, 0x24, 0x48, 0x41, 0x8b, 0xaf, 0x90, 0x00, 0x00, 0x00, 0x49, 0x03, 0xe8, 0x83, 0x7d,
+        0x0c, 0x00, 0x74, 0x78, 0x4c, 0x89, 0x74, 0x24, 0x28, 0x0f, 0x1f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x8b, 0x4d, 0x0c, 0x49, 0x03, 0xc8, 0xff, 0x56, 0x10, 0x48, 0x8b, 0x56, 0x08, 0x4c,
+        0x8b, 0xf0, 0x8b, 0x5d, 0x00, 0x8b, 0x7d, 0x10, 0x48, 0x03, 0xda, 0x48, 0x03, 0xfa, 0x48, 0x8b, 0x0b, 0x48, 0x85, 0xc9, 0x74, 0x36, 0x4c, 0x8b, 0x46, 0x18, 0x48, 0x85, 0xc9, 0x79,
+        0x05, 0x0f, 0xb7, 0xd1, 0xeb, 0x0b, 0x48, 0x8b, 0x56, 0x08, 0x48, 0x83, 0xc2, 0x02, 0x48, 0x03, 0xd1, 0x49, 0x8b, 0xce, 0x41, 0xff, 0xd0, 0x48, 0x83, 0xc3, 0x08, 0x48, 0x89, 0x07,
+        0x48, 0x83, 0xc7, 0x08, 0x48, 0x8b, 0x0b, 0x48, 0x85, 0xc9, 0x75, 0xce, 0x48, 0x8b, 0x56, 0x08, 0x48, 0x83, 0xc5, 0x14, 0x4c, 0x8b, 0xc2, 0x83, 0x7d, 0x0c, 0x00, 0x75, 0x99, 0x4c,
+        0x8b, 0x74, 0x24, 0x28, 0x48, 0x8b, 0x6c, 0x24, 0x48, 0x48, 0x8b, 0x7c, 0x24, 0x50, 0xc7, 0x06, 0x05, 0x00, 0x00, 0x00, 0x41, 0x83, 0xbf, 0xd4, 0x00, 0x00, 0x00, 0x00, 0x74, 0x2c,
+        0x41, 0x8b, 0x87, 0xd0, 0x00, 0x00, 0x00, 0x48, 0x8b, 0x5c, 0x10, 0x18, 0x48, 0x85, 0xdb, 0x74, 0x1b, 0x48, 0x8b, 0x03, 0x48, 0x85, 0xc0, 0x74, 0x13, 0x48, 0x8b, 0x4e, 0x08, 0x45,
+        0x33, 0xc0, 0x41, 0x8d, 0x50, 0x01, 0xff, 0xd0, 0x48, 0x83, 0xc3, 0x08, 0x75, 0xe5, 0x48, 0x8b, 0x4e, 0x08, 0x45, 0x33, 0xc0, 0xc7, 0x06, 0x06, 0x00, 0x00, 0x00, 0x41, 0x8b, 0x47,
+        0x28, 0x48, 0x03, 0xc1, 0x41, 0x8d, 0x50, 0x01, 0xff, 0xd0, 0x4c, 0x8b, 0x7c, 0x24, 0x20, 0x48, 0x8b, 0x5c, 0x24, 0x40, 0xc7, 0x06, 0x01, 0x00, 0x00, 0x00, 0x48, 0x83, 0xc4, 0x30,
+        0x5e, 0xc3
+    };
+
+    BYTE x32shellcode[] =
+    {
+        0x55, 0x8b, 0xec, 0x83, 0xec, 0x14, 0x56, 0x8b, 0x75, 0x08, 0x85, 0xf6, 0x0f, 0x84, 0x72, 0x01, 0x00, 0x00, 0x53, 0x8b, 0x5e, 0x08, 0x8b, 0xc3, 0xc7, 0x06, 0x02, 0x00, 0x00, 0x00,
+        0x8b, 0xcb, 0x57, 0x8b, 0x7b, 0x3c, 0x03, 0xfb, 0xc7, 0x06, 0x03, 0x00, 0x00, 0x00, 0x89, 0x7d, 0xfc, 0x2b, 0x47, 0x34, 0x89, 0x45, 0xf0, 0x74, 0x7a, 0x83, 0xbf, 0xa4, 0x00, 0x00,
+        0x00, 0x00, 0x74, 0x71, 0x8b, 0x87, 0xa0, 0x00, 0x00, 0x00, 0x03, 0xc3, 0x89, 0x45, 0xf8, 0x8b, 0x10, 0x85, 0xd2, 0x74, 0x60, 0x8b, 0x78, 0x04, 0x8d, 0x0c, 0x1a, 0x89, 0x4d, 0xf4,
+        0x8d, 0x50, 0x08, 0x8d, 0x48, 0x04, 0x83, 0xef, 0x08, 0xd1, 0xef, 0x89, 0x4d, 0xec, 0x8b, 0xcb, 0x74, 0x32, 0x8b, 0x5d, 0xf4, 0x8b, 0x75, 0xf0, 0x0f, 0xb7, 0x02, 0x8b, 0xc8, 0x81,
+        0xe1, 0x00, 0xf0, 0x00, 0x00, 0x81, 0xf9, 0x00, 0x30, 0x00, 0x00, 0x75, 0x08, 0x25, 0xff, 0x0f, 0x00, 0x00, 0x01, 0x34, 0x18, 0x83, 0xc2, 0x02, 0x83, 0xef, 0x01, 0x75, 0xdd, 0x8b,
+        0x75, 0x08, 0x8b, 0x45, 0xf8, 0x8b, 0x4e, 0x08, 0x8b, 0x55, 0xec, 0x8b, 0xd9, 0x03, 0x02, 0x89, 0x45, 0xf8, 0x8b, 0x10, 0x85, 0xd2, 0x75, 0xa3, 0x8b, 0x7d, 0xfc, 0xc7, 0x06, 0x04,
+        0x00, 0x00, 0x00, 0x8b, 0xd1, 0x83, 0xbf, 0x84, 0x00, 0x00, 0x00, 0x00, 0x74, 0x70, 0x8b, 0x9f, 0x80, 0x00, 0x00, 0x00, 0x03, 0xd9, 0x89, 0x5d, 0xf8, 0x83, 0x7b, 0x0c, 0x00, 0x74,
+        0x5f, 0x8b, 0x43, 0x0c, 0x03, 0xc1, 0x50, 0x8b, 0x46, 0x10, 0xff, 0xd0, 0x8b, 0x3b, 0x8b, 0x56, 0x08, 0x8b, 0x5b, 0x10, 0x03, 0xfa, 0x03, 0xda, 0x89, 0x45, 0x08, 0x8b, 0x0f, 0x85,
+        0xc9, 0x74, 0x2b, 0x8b, 0x56, 0x18, 0x85, 0xc9, 0x79, 0x05, 0x0f, 0xb7, 0xc1, 0xeb, 0x08, 0x8b, 0x46, 0x08, 0x83, 0xc1, 0x02, 0x03, 0xc1, 0x50, 0xff, 0x75, 0x08, 0xff, 0xd2, 0x83,
+        0xc7, 0x04, 0x89, 0x03, 0x83, 0xc3, 0x04, 0x8b, 0x0f, 0x85, 0xc9, 0x75, 0xd8, 0x8b, 0x56, 0x08, 0x8b, 0x5d, 0xf8, 0x8b, 0xca, 0x83, 0xc3, 0x14, 0x89, 0x5d, 0xf8, 0x83, 0x7b, 0x0c,
+        0x00, 0x75, 0xa4, 0x8b, 0x7d, 0xfc, 0xc7, 0x06, 0x05, 0x00, 0x00, 0x00, 0x83, 0xbf, 0xc4, 0x00, 0x00, 0x00, 0x00, 0x74, 0x26, 0x8b, 0x87, 0xc0, 0x00, 0x00, 0x00, 0x8b, 0x7c, 0x10,
+        0x0c, 0x85, 0xff, 0x74, 0x15, 0x90, 0x8b, 0x07, 0x85, 0xc0, 0x74, 0x0e, 0x6a, 0x00, 0x6a, 0x01, 0xff, 0x76, 0x08, 0xff, 0xd0, 0x83, 0xc7, 0x04, 0x75, 0xec, 0x8b, 0x7d, 0xfc, 0x8b,
+        0x4e, 0x08, 0x6a, 0x00, 0xc7, 0x06, 0x06, 0x00, 0x00, 0x00, 0x8b, 0x47, 0x28, 0x6a, 0x01, 0x51, 0x03, 0xc1, 0xff, 0xd0, 0x5f, 0xc7, 0x06, 0x01, 0x00, 0x00, 0x00, 0x5b, 0x5e, 0x8b,
+        0xe5, 0x5d, 0xc2, 0x04, 0x00
+    };
+
+    /*
+        The Shellcode function was used to build the shellcode bytes above. It is not
+        used for anything else.
+
+        The shellcode is injected in the target process to perform relocations,
+        fix the IAT, call the TLS callbacks, and call the DLL entrypoint.
+        Because it is compiled in the injector and is injected in an external process,
+        the shellcode must only have position independent code. When compiling debug
+        builds in Visual Studio, it adds extra function calls for debug purposes, and
+        that makes the code not position independent. Because of this behaviour, the
+        shellcode will only work if the injector is built in release mode.
+    */
+    void __stdcall Shellcode(ManualMappingData* data) { 
+        if (!data)
+            return;
+
+        data->status = 2;
+        PIMAGE_DOS_HEADER pDOSHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(data->baseAddr);
+        PIMAGE_NT_HEADERS pNTHeaders = reinterpret_cast<PIMAGE_NT_HEADERS>(data->baseAddr + pDOSHeader->e_lfanew);
+        PIMAGE_OPTIONAL_HEADER pOptHeader = reinterpret_cast<PIMAGE_OPTIONAL_HEADER>(&pNTHeaders->OptionalHeader);
+
+        // Relocations
+        data->status = 3;
+        BYTE* baseDelta = reinterpret_cast<BYTE*>(data->baseAddr) - pOptHeader->ImageBase;
+        if (baseDelta)
+        {
+            if (pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size)
+            {
+                PIMAGE_BASE_RELOCATION pBaseRelocation = reinterpret_cast<PIMAGE_BASE_RELOCATION>(data->baseAddr + pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
+                while (pBaseRelocation->VirtualAddress)
                 {
-                    if (RELOC_FLAG(*typeOffset))
+                    BYTE* relocAddress = reinterpret_cast<BYTE*>(data->baseAddr) + pBaseRelocation->VirtualAddress;
+                    int entries = (pBaseRelocation->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
+                    WORD* typeOffset = reinterpret_cast<WORD*>(pBaseRelocation + 1);
+
+                    for (int i = 0; i < entries; i++, typeOffset++)
                     {
-                        UINT_PTR* pPatch = reinterpret_cast<UINT_PTR*>(relocAddress + (*typeOffset & 0xFFF));
-                        (*pPatch) += reinterpret_cast<UINT_PTR>(baseDelta);
+                        if (RELOC_FLAG(*typeOffset))
+                        {
+                            UINT_PTR* pPatch = reinterpret_cast<UINT_PTR*>(relocAddress + (*typeOffset & 0xFFF));
+                            (*pPatch) += reinterpret_cast<UINT_PTR>(baseDelta);
+                        }
                     }
+                    pBaseRelocation = reinterpret_cast<PIMAGE_BASE_RELOCATION>(reinterpret_cast<BYTE*>(pBaseRelocation) + pBaseRelocation->SizeOfBlock);
                 }
-                pBaseRelocation = reinterpret_cast<PIMAGE_BASE_RELOCATION>(reinterpret_cast<BYTE*>(pBaseRelocation) + pBaseRelocation->SizeOfBlock);
             }
         }
-    }
 
-    // Imports
-    data->status = 4;
-    if (pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
-    {
-        PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(data->baseAddr + pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-        while (pImportDescriptor->Name)
+        // Imports
+        data->status = 4;
+        if (pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size)
         {
-            char* dllName = reinterpret_cast<char*>(data->baseAddr + pImportDescriptor->Name);
-            HMODULE hModule = data->pLoadLibraryA(dllName);
-            // pThunkRef: PIMAGE_THUNK_DATA
-            UINT_PTR* pThunkRef = reinterpret_cast<UINT_PTR*>(data->baseAddr + pImportDescriptor->OriginalFirstThunk);
-            UINT_PTR* pFuncRef = reinterpret_cast<UINT_PTR*>(data->baseAddr + pImportDescriptor->FirstThunk);
-
-            while (*pThunkRef)
+            PIMAGE_IMPORT_DESCRIPTOR pImportDescriptor = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(data->baseAddr + pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+            while (pImportDescriptor->Name)
             {
-                if (IMAGE_SNAP_BY_ORDINAL(*pThunkRef)) {
-                    *pFuncRef = reinterpret_cast<UINT_PTR>(data->pGetProcAddress(hModule, reinterpret_cast<char*>(*pThunkRef & 0xFFFF)));
+                char* dllName = reinterpret_cast<char*>(data->baseAddr + pImportDescriptor->Name);
+                HMODULE hModule = reinterpret_cast<f_LoadLibraryA>(data->pLoadLibraryA)(dllName);
+                // pThunkRef: PIMAGE_THUNK_DATA
+                UINT_PTR* pThunkRef = reinterpret_cast<UINT_PTR*>(data->baseAddr + pImportDescriptor->OriginalFirstThunk);
+                UINT_PTR* pFuncRef = reinterpret_cast<UINT_PTR*>(data->baseAddr + pImportDescriptor->FirstThunk);
+
+                while (*pThunkRef)
+                {
+                    if (IMAGE_SNAP_BY_ORDINAL(*pThunkRef)) {
+                        *pFuncRef = reinterpret_cast<UINT_PTR>(reinterpret_cast<f_GetProcAddress>(data->pGetProcAddress)(hModule, reinterpret_cast<char*>(*pThunkRef & 0xFFFF)));
+                    }
+                    else {
+                        PIMAGE_IMPORT_BY_NAME pImport = reinterpret_cast<PIMAGE_IMPORT_BY_NAME>(data->baseAddr + (*pThunkRef));
+                        *pFuncRef = reinterpret_cast<UINT_PTR>(reinterpret_cast<f_GetProcAddress>(data->pGetProcAddress)(hModule, pImport->Name));
+                    }
+                    pThunkRef++;
+                    pFuncRef++;
                 }
-                else {
-                    PIMAGE_IMPORT_BY_NAME pImport = reinterpret_cast<PIMAGE_IMPORT_BY_NAME>(data->baseAddr + (*pThunkRef));
-                    *pFuncRef = reinterpret_cast<UINT_PTR>(data->pGetProcAddress(hModule, pImport->Name));
-                }
-                pThunkRef++;
-                pFuncRef++;
+                pImportDescriptor++;
             }
-            pImportDescriptor++;
         }
+
+        // TLS callbacks
+        data->status = 5;
+        if (pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size) {
+            PIMAGE_TLS_DIRECTORY pTLS = reinterpret_cast<PIMAGE_TLS_DIRECTORY>(data->baseAddr + pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress);
+            PIMAGE_TLS_CALLBACK* pCallback = reinterpret_cast<PIMAGE_TLS_CALLBACK*>(pTLS->AddressOfCallBacks);
+
+            for (; pCallback && *pCallback; ++pCallback) {
+                (*pCallback)(reinterpret_cast<PVOID>(data->baseAddr), DLL_PROCESS_ATTACH, nullptr);
+            }
+        }
+
+        // call entrypoint
+        data->status = 6;
+        f_DLL_ENTRY_POINT _DllMain = reinterpret_cast<f_DLL_ENTRY_POINT>(data->baseAddr + pOptHeader->AddressOfEntryPoint);
+        _DllMain(reinterpret_cast<void*>(data->baseAddr), DLL_PROCESS_ATTACH, nullptr);
+        data->status = 1;
+    }
+}
+
+// TODO: remove prints, or make a verbosity level check
+bool ManualMapDll(Process* proc, const char* dllPath)
+{
+    bool success = false;
+
+    BYTE* baseAddr = nullptr;
+    BYTE* dataAddr = nullptr;
+    BYTE* shellcodeAddr = nullptr;
+    BYTE* shellcode = proc->is32Bits ? x32shellcode : x64shellcode;
+
+    // PE data
+    PE* dll = new PE(dllPath);
+    PEHeaders headers = dll->headers;
+    DWORD sizeOfImage = proc->is32Bits ? headers.pOptionalHeader32->SizeOfImage : headers.pOptionalHeader64->SizeOfImage;
+    uintptr_t imageBase = proc->is32Bits ? headers.pOptionalHeader32->ImageBase : headers.pOptionalHeader64->ImageBase;
+    DWORD sizeOfHeaders = proc->is32Bits ? headers.pOptionalHeader32->SizeOfHeaders : headers.pOptionalHeader64->SizeOfHeaders;
+
+    { // brackets to limit the scope of some variables. This is needed because we are using goto.
+        // allocate memory in the target process
+        std::cout << "Allocating memory in the target process...\n";
+        std::cout << "SizeOfImage: 0x" << std::hex << sizeOfImage << std::endl;
+        baseAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(sizeOfImage, reinterpret_cast<void*>(imageBase)));
+
+        if (!baseAddr)
+        {
+            baseAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(sizeOfImage));
+            if (!baseAddr)
+            {
+                std::cerr << "Could not allocate memory in the target process.\n";
+                goto cleanup;
+            }
+        }
+        std::cout << "Memory allocated successfully! base address at 0x" << std::hex << reinterpret_cast<void*>(baseAddr) << "\n\n";
+
+        // write headers
+        std::cout << "Writing file headers...\n";
+        if (!proc->WriteMemory(baseAddr, dll->buffer, sizeOfHeaders))
+        {
+            std::cerr << "Could not write file headers in the target process.\n";
+            goto cleanup;
+        }
+        std::cout << "Headers written successfully! Size: 0x" << std::hex << sizeOfHeaders << "\n\n";
+
+        // map sections
+        std::cout << "Mapping sections...\n";
+        PIMAGE_SECTION_HEADER pSectionHeader = headers.pSectionHeader;
+        for (int i = 0; i < headers.pFileHeader->NumberOfSections; ++pSectionHeader, i++)
+        {
+            if (pSectionHeader->SizeOfRawData)
+            {
+                // section names are up to 8 chars
+                std::cout << "Mapping section " << std::string(reinterpret_cast<char*>(pSectionHeader->Name)).substr(0, 8) << std::endl;
+                std::cout << "Address: " << std::hex << reinterpret_cast<void*>(baseAddr + pSectionHeader->VirtualAddress)
+                    << " size: 0x" << std::hex << pSectionHeader->SizeOfRawData << std::endl;
+                if (!proc->WriteMemory(baseAddr + pSectionHeader->VirtualAddress, dll->buffer + pSectionHeader->PointerToRawData, pSectionHeader->SizeOfRawData))
+                {
+                    std::cerr << "Could not map sections in the target process.\n";
+                    goto cleanup;
+                }
+            }
+        }
+        std::cout << "Sections mapped successfully!\n\n";
+
+        // write manual mapping data
+        std::cout << "Writing manual mapping data...\n";
+        ManualMappingData data;
+        data.status = 0;
+        data.baseAddr = reinterpret_cast<INT64>(baseAddr);
+        MODULEENTRY32 meKernel32 = proc->GetModule("kernel32.dll");
+        PE* kernel32 = new PE(meKernel32.szExePath);
+        data.pGetProcAddress = reinterpret_cast<INT64>(meKernel32.modBaseAddr + kernel32->GetExportRVA("GetProcAddress"));
+        data.pLoadLibraryA = reinterpret_cast<INT64>(meKernel32.modBaseAddr + kernel32->GetExportRVA("LoadLibraryA"));
+        delete kernel32;
+
+        dataAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(sizeof(ManualMappingData)));
+        if (!dataAddr)
+        {
+            std::cerr << "Could not write manual mapping data in the target process.\n";
+            goto cleanup;
+        }
+        proc->WriteMemory(dataAddr, reinterpret_cast<BYTE*>(&data), sizeof(ManualMappingData));
+        std::cout << "Manual mapping data written successfully at 0x" << std::hex << reinterpret_cast<void*>(dataAddr) << "\n\n";
+
+        // inject shellcode
+        std::cout << "Injecting loader shellcode...\n";
+        shellcodeAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(0x1000));
+        if (!shellcodeAddr)
+        {
+            std::cerr << "Could not allocate memory for the shellcode in the target process.\n";
+            goto cleanup;
+        }
+        proc->WriteMemory(shellcodeAddr, shellcode, 0x1000);
+        std::cout << "Shellcode injected at 0x" << std::hex << reinterpret_cast<void*>(shellcodeAddr) << "\n\n";
+
+        // call shellcode
+        std::cout << "Creating remote thread to run the shellcode...\n";
+        HANDLE hThread = CreateRemoteThread(proc->handle, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(shellcodeAddr), dataAddr, 0, nullptr);
+        if (!hThread)
+        {
+            std::cerr << "Could not create a thread.\n";
+            goto cleanup;
+        }
+        CloseHandle(hThread);
+        std::cout << "Shellcode called successfuly!\n\n";
+
+        // wait for shellcode
+        DWORD status = 0;
+        while (status != 1)
+        {
+            std::cout << "Waiting for shellcode to return... status: " << status << "\n";
+            Sleep(1000);
+            ManualMappingData dataCheck;
+            proc->ReadMemory(dataAddr, reinterpret_cast<BYTE*>(&dataCheck), sizeof(ManualMappingData));
+            status = dataCheck.status;
+        }
+        std::cout << "Shellcode finished! status: " << status << "\n\n";
+        success = true;
     }
 
-    // TLS callbacks
-    data->status = 5;
-    if (pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].Size) {
-        PIMAGE_TLS_DIRECTORY pTLS = reinterpret_cast<PIMAGE_TLS_DIRECTORY>(data->baseAddr + pOptHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_TLS].VirtualAddress);
-        PIMAGE_TLS_CALLBACK* pCallback = reinterpret_cast<PIMAGE_TLS_CALLBACK*>(pTLS->AddressOfCallBacks);
+cleanup:
+    std::cout << "Cleaning up...\n";
+    if (baseAddr)
+        proc->FreeMemory(baseAddr);
+    if (dataAddr)
+        proc->FreeMemory(dataAddr);
+    if (shellcodeAddr)
+        proc->FreeMemory(shellcodeAddr);
+    proc->Close();
+    delete dll;
+    std::cout << "Cleanup done!\n";
 
-        for (; pCallback && *pCallback; ++pCallback) {
-            (*pCallback)(data->baseAddr, DLL_PROCESS_ATTACH, nullptr);
-        }
-    }
-
-    // call entrypoint
-    data->status = 6;
-    f_DLL_ENTRY_POINT _DllMain = reinterpret_cast<f_DLL_ENTRY_POINT>(data->baseAddr + pOptHeader->AddressOfEntryPoint);
-    _DllMain(data->baseAddr, DLL_PROCESS_ATTACH, nullptr);
-    data->status = 1;
+    return success;
 }
