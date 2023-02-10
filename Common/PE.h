@@ -17,6 +17,7 @@ typedef struct PEHeaders
         PIMAGE_OPTIONAL_HEADER64 pOptionalHeader64;
         PIMAGE_OPTIONAL_HEADER32 pOptionalHeader32;
     };
+    PIMAGE_SECTION_HEADER pSectionHeader;
 } PEHeaders;
 
 class PE
@@ -26,7 +27,7 @@ private:
     PE& operator=(const PE&);
 
 public:
-    PE(char* fileName);
+    PE(const char* fileName);
     ~PE();
 
     BYTE* RVAToBufferPointer(DWORD rva);

@@ -36,12 +36,13 @@ namespace
             headers->pFileHeader = &headers->pNTHeaders64->FileHeader;
             headers->pOptionalHeader64 = &headers->pNTHeaders64->OptionalHeader;
         }
+        headers->pSectionHeader = IMAGE_FIRST_SECTION(headers->pNTHeaders64); // bits doesn`t matter here
         return true;
     }
 }
 
 
-PE::PE(char* fileName)
+PE::PE(const char* fileName)
 {
     // checks if file exists
     std::ifstream file;
@@ -96,7 +97,7 @@ PE::~PE()
 
 BYTE* PE::RVAToBufferPointer(DWORD rva) {
     PIMAGE_FILE_HEADER pFileHeader = this->headers.pFileHeader;
-    PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(this->headers.pNTHeaders64);
+    PIMAGE_SECTION_HEADER pSectionHeader = this->headers.pSectionHeader;
 
     for (int i = 0; i < pFileHeader->NumberOfSections; i++) 
     {
