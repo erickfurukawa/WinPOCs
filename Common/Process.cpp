@@ -2,7 +2,7 @@
 #include "Utils.h"
 #include <iostream>
 
-Process::Process(char* procName) 
+Process::Process(const char* procName)
 {
     HANDLE hProcessSnap;
     PROCESSENTRY32 pe32;
@@ -51,6 +51,9 @@ bool Process::Open(DWORD access)
     this->handle = OpenProcess(access, false, this->pid);
     if (this->handle) 
     {
+        BOOL is32Bits;
+        IsWow64Process(this->handle, &is32Bits);
+        this->is32Bits = is32Bits ? true : false;
         return true;
     }
     return false;
@@ -230,7 +233,7 @@ BYTE* Process::ScanMemory(BYTE* pattern, char* mask, PVOID addr, uintptr_t size)
     return matchAddr;
 }
 
-MODULEENTRY32 Process::GetModule(char* modName)
+MODULEENTRY32 Process::GetModule(const char* modName)
 {
     HANDLE hModuleSnap;
     MODULEENTRY32 mod32;
