@@ -4,8 +4,8 @@
 #include <vector>
 #include <format>
 #include "../Common/Constants.h"
-#include "../Common/Utils.h"
 #include "../Common/PE.h"
+#include "ProxyDllGenerator.h"
 
 namespace 
 {
@@ -110,7 +110,7 @@ namespace
         std::string dllMainStr;
         std::string freeLibraryStr = std::format("            FreeLibrary({}.handle);\n", structName);
         dllMainStr +=
-            "BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)\n"
+            "BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)\n"
             "{\n"
             "    switch (ul_reason_for_call)\n"
             "    {\n"
@@ -120,12 +120,14 @@ namespace
             "            break;\n"
             "        }\n"
             "        case DLL_THREAD_ATTACH:\n"
+            "            break;\n"
             "        case DLL_THREAD_DETACH:\n"
+            "            break;\n"
             "        case DLL_PROCESS_DETACH:\n"
             "        {\n" +
-            freeLibraryStr +
+                         freeLibraryStr +
+            "            break;\n"
             "        }\n"
-            "        break;\n"
             "    }\n"
             "    return TRUE;\n"
             "}\n\n";
@@ -225,33 +227,16 @@ namespace
     }
 }
 
-int main(int argc, char** argv)
+bool GenerateProxyDll(PE* dll)
 {
-    char dllPath[MAX_PATH + 1];
-
-    if (argc == 2) {
-        strncpy_s(dllPath, argv[1], MAX_PATH + 1);
-    }
-    else {
-        std::cout << "Dll path:\n";
-        std::cin.getline(dllPath, MAX_PATH + 1);
-    }
-
-    if (!FileExists(dllPath))
-    {
-        std::cerr << "Could not open dll " << dllPath << "\n";
-        return 1;
-    }
-
-    PE* dll = new PE(dllPath);
     std::vector<Export> exports = GetExports(dll);
     std::string dllName = std::string(dll->fileName).substr(0, strnlen(dll->fileName, MAX_LENGTH + 1) - 4);
-
-    GenerateDef(exports, dllName);
-    GenerateCpp(exports, dllName, dll->is32Bits);
-    if (!dll->is32Bits)
-    {
-        GenerateAsm(exports, dllName);
+    if (GenerateDef(exports, dllName) && GenerateCpp(exports, dllName, dll->is32Bits)) {
+        if (!dll->is32Bits)
+        {
+            return GenerateAsm(exports, dllName);
+        }
+        return true;
     }
-    delete dll;
+    return false;
 }

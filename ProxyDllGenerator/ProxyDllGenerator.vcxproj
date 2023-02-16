@@ -133,7 +133,11 @@
   <ItemGroup>
     <ClCompile Include="..\Common\PE.cpp" />
     <ClCompile Include="..\Common\Utils.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="ProxyDllGenerator.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ProxyDllGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
