@@ -116,17 +116,17 @@ DWORD PE::GetExportRVA(const char* exportName)
 {
     PIMAGE_EXPORT_DIRECTORY pExportDirectory = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
         this->RVAToBufferPointer(this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
-    DWORD* pfuncNameRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfNames));
-    DWORD* pfuncRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
+    DWORD* pExportNameRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfNames));
+    DWORD* pExportRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
     WORD* pOrdinal = reinterpret_cast<WORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfNameOrdinals));
 
     for (int i = 0; i < pExportDirectory->NumberOfNames; i++)
     {
-        if (_strcmpi(exportName, reinterpret_cast<char*>(this->RVAToBufferPointer(*pfuncNameRVA))) == 0)
+        if (_strcmpi(exportName, reinterpret_cast<char*>(this->RVAToBufferPointer(*pExportNameRVA))) == 0)
         {
-            return pfuncRVA[*pOrdinal];
+            return pExportRVA[*pOrdinal];
         }
-        pfuncNameRVA++;
+        pExportNameRVA++;
         pOrdinal++;
     }
     return 0;
@@ -137,12 +137,12 @@ DWORD PE::GetExportRVA(DWORD ordinal)
 {
     PIMAGE_EXPORT_DIRECTORY pExportDirectory = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
         this->RVAToBufferPointer(this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
-    DWORD* pfuncRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
+    DWORD* pExportRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
 
     DWORD unbiasedOrdinal = ordinal - pExportDirectory->Base;
     if (unbiasedOrdinal >= 0 && unbiasedOrdinal < pExportDirectory->NumberOfFunctions)
     {
-        return pfuncRVA[unbiasedOrdinal];
+        return pExportRVA[unbiasedOrdinal];
     }
     return 0;
 }
