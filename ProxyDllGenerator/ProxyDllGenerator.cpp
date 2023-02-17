@@ -133,40 +133,27 @@ namespace
             "}\n\n";
 
         std::string functionsStr;
-        if (!is32Bits)
-        {
-            functionsStr = "extern \"C\"\n{\n";
-        }
  
         for (Export exp : exports)
         {
             std::string origFuncName = "original_" + exp.funcName;
             std::string proxyFuncName = "proxy_" + exp.funcName;
-            std::string farproc = std::format("    FARPROC {};\n", origFuncName);
 
             if (is32Bits)
             {
-                structStr += farproc;
+                structStr += std::format("    FARPROC {};\n", origFuncName);
                 functionsStr += std::format("__declspec(naked) void {}() {{ _asm {{ jmp [{}.{}] }} }};\n", proxyFuncName, structName, origFuncName);
                 setupProxyStr += std::format("    {}.{} = GetProcAddress({}.handle, \"{}\");\n", structName, origFuncName, structName, exp.funcName);
             }
             else
             {
-                functionsStr += farproc;
+                functionsStr += std::format("extern \"C\" FARPROC {};\n", origFuncName);
                 setupProxyStr += std::format("    {} = GetProcAddress({}.handle, \"{}\");\n", origFuncName, structName, exp.funcName);
             }
         }
-
         structStr += std::format("}} {};\n\n", structName);
         setupProxyStr += "}\n\n";
-        if (!is32Bits)
-        {
-            functionsStr += "}\n\n";
-        }
-        else 
-        {
-            functionsStr += "\n";
-        }
+        functionsStr += "\n";
 
         // write file
         std::string filename = dllName + ".cpp";
