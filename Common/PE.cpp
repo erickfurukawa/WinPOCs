@@ -75,7 +75,6 @@ PE::PE(const char* fileName)
     }
 
     this->is32Bits = this->headers.pFileHeader->Machine == IMAGE_FILE_MACHINE_I386;
-
     if (this->is32Bits)
     {
         this->pDataDirectory = this->headers.pOptionalHeader32->DataDirectory;
@@ -84,6 +83,7 @@ PE::PE(const char* fileName)
     {
         this->pDataDirectory = this->headers.pOptionalHeader64->DataDirectory;
     }
+    this->isDotNet = this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress != 0;
 }
 
 PE::~PE()

@@ -6,7 +6,7 @@
 typedef struct PEHeaders
 {
     PIMAGE_DOS_HEADER pDOSHeader;
-    union 
+    union
     {
         PIMAGE_NT_HEADERS64 pNTHeaders64;
         PIMAGE_NT_HEADERS32 pNTHeaders32;
@@ -38,6 +38,7 @@ public:
     // DWORD GetImportRVA(char* moduleName, DWORD ordinal);
 
     bool is32Bits;
+    bool isDotNet;
     char filePath[MAX_PATH+1];
     char fileName[MAX_LENGTH+1];
 
