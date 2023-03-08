@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include "Constants.h"
+#include <string>
 
 typedef struct PEHeaders
 {
@@ -20,11 +21,39 @@ typedef struct PEHeaders
     PIMAGE_SECTION_HEADER pSectionHeader;
 } PEHeaders;
 
+typedef struct DotnetData
+{
+    PIMAGE_COR20_HEADER pCorHeader;
+    BYTE* baseAddress;
+    DWORD signature; // 0x424A5342
+    WORD majorVersion; // ignored, always 1
+    WORD minorVersion; // ignored, always 1
+    DWORD reserved; // always 0
+    DWORD versionStrLen;
+    std::string versionStr;
+    WORD flags; // always 0
+    WORD streams;
+    BYTE* streamHeaders;
+
+    // streams
+    BYTE* stringsStream;
+    DWORD stringsStreamSize;
+    BYTE* USStream;
+    DWORD USStreamSize;
+    BYTE* blobStream;
+    DWORD blobStreamSize;
+    BYTE* guidStream;
+    DWORD guidStreamSize;
+    BYTE* mainStream;
+    DWORD mainStreamSize;
+} DotnetData;
+
 class PE
 {
 private:
     PE(const PE&);
     PE& operator=(const PE&);
+    void ParseDotnetMetadata();
 
 public:
     PE(const char* fileName);
@@ -37,6 +66,7 @@ public:
     // TODO: ordinal GetImportRVA
     // DWORD GetImportRVA(char* moduleName, DWORD ordinal);
 
+    DotnetData dotnetData;
     bool is32Bits;
     bool isDotNet;
     char filePath[MAX_PATH+1];

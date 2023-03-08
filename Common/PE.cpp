@@ -83,7 +83,13 @@ PE::PE(const char* fileName)
     {
         this->pDataDirectory = this->headers.pOptionalHeader64->DataDirectory;
     }
+
+    // dotnet
     this->isDotNet = this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress != 0;
+    if (this->isDotNet)
+    {
+        this->ParseDotnetMetadata();
+    }
 }
 
 PE::~PE()
@@ -184,4 +190,40 @@ DWORD PE::GetImportRVA(const char* moduleName, const char* importName)
     }
     std::cerr << "Could not find IAT entry for " << moduleName << "." << importName << "\n";
     return 0;
+}
+
+void PE::ParseDotnetMetadata() 
+{
+    DotnetData dotnetData;
+    dotnetData.pCorHeader = reinterpret_cast<PIMAGE_COR20_HEADER>(this->RVAToBufferPointer(this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress));
+
+    BYTE* currAddress = this->RVAToBufferPointer(dotnetData.pCorHeader->MetaData.VirtualAddress);
+    dotnetData.baseAddress = currAddress;
+
+    dotnetData.signature = *reinterpret_cast<DWORD*>(currAddress);
+    currAddress += sizeof(DWORD);
+
+    dotnetData.majorVersion = *reinterpret_cast<WORD*>(currAddress);
+    currAddress += sizeof(WORD);
+
+    dotnetData.minorVersion = *reinterpret_cast<WORD*>(currAddress);
+    currAddress += sizeof(WORD);
+
+    dotnetData.reserved = *reinterpret_cast<DWORD*>(currAddress);
+    currAddress += sizeof(DWORD);
+
+    dotnetData.versionStrLen = *reinterpret_cast<DWORD*>(currAddress);
+    currAddress += sizeof(DWORD);
+
+    dotnetData.versionStr = std::string(reinterpret_cast<char*>(currAddress));
+    currAddress += dotnetData.versionStrLen;
+
+    dotnetData.flags = *reinterpret_cast<WORD*>(currAddress);
+    currAddress += sizeof(WORD);
+
+    dotnetData.streams = *reinterpret_cast<WORD*>(currAddress);
+    currAddress += sizeof(WORD);
+
+    dotnetData.streamHeaders = currAddress;
+    this->dotnetData = dotnetData;
 }
