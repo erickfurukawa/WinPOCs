@@ -41,7 +41,6 @@ namespace
     }
 }
 
-
 PE::PE(const char* fileName)
 {
     // checks if file exists
@@ -192,38 +191,90 @@ DWORD PE::GetImportRVA(const char* moduleName, const char* importName)
     return 0;
 }
 
-void PE::ParseDotnetMetadata() 
+void PE::ParseDotnetMetadata()
 {
-    DotnetData dotnetData;
-    dotnetData.pCorHeader = reinterpret_cast<PIMAGE_COR20_HEADER>(this->RVAToBufferPointer(this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress));
+    dotnet::Metadata metadata;
+    metadata.pCorHeader = reinterpret_cast<PIMAGE_COR20_HEADER>(this->RVAToBufferPointer(this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress));
 
-    BYTE* currAddress = this->RVAToBufferPointer(dotnetData.pCorHeader->MetaData.VirtualAddress);
-    dotnetData.baseAddress = currAddress;
+    BYTE* currAddress = this->RVAToBufferPointer(metadata.pCorHeader->MetaData.VirtualAddress);
+    metadata.baseAddress = currAddress;
 
-    dotnetData.signature = *reinterpret_cast<DWORD*>(currAddress);
+    metadata.signature = *reinterpret_cast<DWORD*>(currAddress);
     currAddress += sizeof(DWORD);
 
-    dotnetData.majorVersion = *reinterpret_cast<WORD*>(currAddress);
+    metadata.majorVersion = *reinterpret_cast<WORD*>(currAddress);
     currAddress += sizeof(WORD);
 
-    dotnetData.minorVersion = *reinterpret_cast<WORD*>(currAddress);
+    metadata.minorVersion = *reinterpret_cast<WORD*>(currAddress);
     currAddress += sizeof(WORD);
 
-    dotnetData.reserved = *reinterpret_cast<DWORD*>(currAddress);
+    metadata.reserved = *reinterpret_cast<DWORD*>(currAddress);
     currAddress += sizeof(DWORD);
 
-    dotnetData.versionStrLen = *reinterpret_cast<DWORD*>(currAddress);
+    metadata.versionStrLen = *reinterpret_cast<DWORD*>(currAddress);
     currAddress += sizeof(DWORD);
 
-    dotnetData.versionStr = std::string(reinterpret_cast<char*>(currAddress));
-    currAddress += dotnetData.versionStrLen;
+    metadata.versionStr = std::string(reinterpret_cast<char*>(currAddress));
+    currAddress += metadata.versionStrLen;
 
-    dotnetData.flags = *reinterpret_cast<WORD*>(currAddress);
+    metadata.flags = *reinterpret_cast<WORD*>(currAddress);
     currAddress += sizeof(WORD);
 
-    dotnetData.streams = *reinterpret_cast<WORD*>(currAddress);
+    metadata.streams = *reinterpret_cast<WORD*>(currAddress);
     currAddress += sizeof(WORD);
 
-    dotnetData.streamHeaders = currAddress;
-    this->dotnetData = dotnetData;
+    metadata.streamHeaders = currAddress;
+    this->dotnetMetadata = metadata;
+
+    // streams ----------
+
+    BYTE* currAddr = metadata.streamHeaders;
+    for (int i = 0; i < metadata.streams; i++)
+    {
+        DWORD streamOffset = *reinterpret_cast<DWORD*>(currAddr);
+        currAddr += sizeof(DWORD);
+        DWORD streamSize = *reinterpret_cast<DWORD*>(currAddr);
+        currAddr += sizeof(DWORD);
+
+        // stream name string is 4 byte aligned
+        currAddr +=  (4 - (uintptr_t)currAddr % 4) % 4;
+
+        std::string streamName = std::string(reinterpret_cast<char*>(currAddr));
+        currAddr += streamName.size() + 1;
+
+        if (streamName == "#Strings")
+        {
+            metadata.stringsStream.streamName = streamName;
+            metadata.stringsStream.address = metadata.baseAddress + streamOffset;
+            metadata.stringsStream.size = streamSize;
+        }
+        else if (streamName == "#US")
+        {
+            metadata.usStream.streamName = streamName;
+            metadata.usStream.address = metadata.baseAddress + streamOffset;
+            metadata.usStream.size = streamSize;
+        }
+        else if (streamName == "#Blob")
+        {
+            metadata.blobStream.streamName = streamName;
+            metadata.blobStream.address = metadata.baseAddress + streamOffset;
+            metadata.blobStream.size = streamSize;
+        }
+        else if (streamName == "#GUID")
+        {
+            metadata.guidStream.streamName = streamName;
+            metadata.guidStream.address = metadata.baseAddress + streamOffset;
+            metadata.guidStream.size = streamSize;
+        }
+        else if (streamName == "#~")
+        {
+            metadata.mainStream.streamName = streamName;
+            metadata.mainStream.address = metadata.baseAddress + streamOffset;
+            metadata.mainStream.size = streamSize;
+        }
+        else
+        {
+            ThrowException(std::string("Unrecognized stream name ") + streamName);
+        }
+    }
 }

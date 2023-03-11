@@ -2,7 +2,80 @@
 
 #include <windows.h>
 #include "Constants.h"
+#include <vector>
 #include <string>
+
+namespace dotnet
+{
+    typedef struct StringsStream
+    {
+        std::string streamName;
+        BYTE* address;
+        DWORD size;
+        std::vector<std::string> strings;
+    } StringsStream;
+
+    typedef struct USStream
+    {
+        std::string streamName;
+        BYTE* address;
+        DWORD size;
+        std::vector<std::wstring> strings;
+    } USStream;
+
+    typedef struct BlobStream
+    {
+        std::string streamName;
+        BYTE* address;
+        DWORD size;
+    } BlobStream;
+
+    typedef struct GUIDStream
+    {
+        std::string streamName;
+        BYTE* address;
+        DWORD size;
+    } GUIDStream;
+
+    typedef struct MainStream
+    {
+        std::string streamName;
+        BYTE* address;
+        DWORD size;
+
+        DWORD reserved;
+        BYTE majorVersion;
+        BYTE minorVersion;
+        BYTE heapOffsetSizes;
+
+        // determined by heapOffsetSizes;
+        unsigned int stringIndexSize;
+        unsigned int guidIndexSize;
+        unsigned int blobIndexSize;
+    } MainStream;
+
+    typedef struct Metadata
+    {
+        PIMAGE_COR20_HEADER pCorHeader;
+        BYTE* baseAddress;
+        DWORD signature; // 0x424A5342
+        WORD majorVersion; // ignored, always 1
+        WORD minorVersion; // ignored, always 1
+        DWORD reserved; // always 0
+        DWORD versionStrLen;
+        std::string versionStr;
+        WORD flags; // always 0
+        WORD streams;
+        BYTE* streamHeaders;
+
+        // streams
+        StringsStream stringsStream;
+        USStream usStream;
+        BlobStream blobStream;
+        GUIDStream guidStream;
+        MainStream mainStream;
+    } Metadata;
+}
 
 typedef struct PEHeaders
 {
@@ -20,33 +93,6 @@ typedef struct PEHeaders
     };
     PIMAGE_SECTION_HEADER pSectionHeader;
 } PEHeaders;
-
-typedef struct DotnetData
-{
-    PIMAGE_COR20_HEADER pCorHeader;
-    BYTE* baseAddress;
-    DWORD signature; // 0x424A5342
-    WORD majorVersion; // ignored, always 1
-    WORD minorVersion; // ignored, always 1
-    DWORD reserved; // always 0
-    DWORD versionStrLen;
-    std::string versionStr;
-    WORD flags; // always 0
-    WORD streams;
-    BYTE* streamHeaders;
-
-    // streams
-    BYTE* stringsStream;
-    DWORD stringsStreamSize;
-    BYTE* USStream;
-    DWORD USStreamSize;
-    BYTE* blobStream;
-    DWORD blobStreamSize;
-    BYTE* guidStream;
-    DWORD guidStreamSize;
-    BYTE* mainStream;
-    DWORD mainStreamSize;
-} DotnetData;
 
 class PE
 {
@@ -66,7 +112,7 @@ public:
     // TODO: ordinal GetImportRVA
     // DWORD GetImportRVA(char* moduleName, DWORD ordinal);
 
-    DotnetData dotnetData;
+    dotnet::Metadata dotnetMetadata;
     bool is32Bits;
     bool isDotNet;
     char filePath[MAX_PATH+1];
