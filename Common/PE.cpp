@@ -283,6 +283,7 @@ void PE::ParseDotnetMetadata()
 
     this->ParseStringsStream();
     this->ParseUSStream();
+    this->ParseGUIDStream();
 }
 
 void PE::ParseStringsStream()
@@ -322,5 +323,29 @@ void PE::ParseUSStream()
         std::wstring theStr = std::wstring(reinterpret_cast<wchar_t*>(currAddress), size / 2);
         this->dotnetMetadata.usStream.strings.push_back(theStr);
         currAddress += size;
+    }
+}
+
+void PE::ParseGUIDStream()
+{
+    BYTE* currAddress = this->dotnetMetadata.guidStream.address;
+    BYTE* endAddr = currAddress + this->dotnetMetadata.guidStream.size;
+
+    while (currAddress < endAddr) {
+        BYTE* guid = currAddress;
+        char str[37] = {};
+        unsigned long time_low = *reinterpret_cast<unsigned long*>(guid);
+        unsigned short time_mid = *reinterpret_cast<unsigned short*>(guid + 4);
+        unsigned short time_hi_and_version = *reinterpret_cast<unsigned short*>(guid + 6);
+        // TODO: clock_seq and node https://en.wikipedia.org/wiki/Universally_unique_identifier#Format
+
+        sprintf_s(str,
+            "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+            time_low, time_mid, time_hi_and_version,
+            guid[8], guid[9], guid[10], guid[11], guid[12], guid[13], guid[14], guid[15]
+        );
+        std::string theStr = std::string(str);
+        this->dotnetMetadata.guidStream.guids.push_back(theStr);
+        currAddress += 16;
     }
 }

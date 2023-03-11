@@ -35,6 +35,7 @@ namespace dotnet
         std::string streamName;
         BYTE* address;
         DWORD size;
+        std::vector<std::string> guids;
     } GUIDStream;
 
     typedef struct MainStream
@@ -104,6 +105,7 @@ private:
     void ParseDotnetMetadata();
     void ParseStringsStream();
     void ParseUSStream();
+    void ParseGUIDStream();
 
 public:
     PE(const char* fileName);
