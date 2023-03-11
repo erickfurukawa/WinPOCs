@@ -99,7 +99,10 @@ class PE
 private:
     PE(const PE&);
     PE& operator=(const PE&);
+
+    // dotnet related methods -----
     void ParseDotnetMetadata();
+    void ParseStringsStream();
 
 public:
     PE(const char* fileName);

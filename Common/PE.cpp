@@ -224,7 +224,6 @@ void PE::ParseDotnetMetadata()
     currAddress += sizeof(WORD);
 
     metadata.streamHeaders = currAddress;
-    this->dotnetMetadata = metadata;
 
     // streams ----------
 
@@ -241,6 +240,9 @@ void PE::ParseDotnetMetadata()
 
         std::string streamName = std::string(reinterpret_cast<char*>(currAddr));
         currAddr += streamName.size() + 1;
+
+        // next entry (streamOffset) is 4 byte aligned
+        currAddr += (4 - (uintptr_t)currAddr % 4) % 4;
 
         if (streamName == "#Strings")
         {
@@ -276,5 +278,27 @@ void PE::ParseDotnetMetadata()
         {
             ThrowException(std::string("Unrecognized stream name ") + streamName);
         }
+    }
+    this->dotnetMetadata = metadata;
+
+    this->ParseStringsStream();
+}
+
+void PE::ParseStringsStream()
+{
+    BYTE* currAddress = this->dotnetMetadata.stringsStream.address;
+    BYTE* endAddr = currAddress + this->dotnetMetadata.stringsStream.size;
+
+    // first null byte
+    this->dotnetMetadata.stringsStream.strings.push_back(std::string(""));
+    currAddress++;
+    while (currAddress < endAddr) {
+        std::string theStr = std::string((char*)currAddress);
+        if (theStr.size() == 0) 
+        {
+            break;
+        }
+        this->dotnetMetadata.stringsStream.strings.push_back(theStr);
+        currAddress += theStr.size() + 1;
     }
 }
