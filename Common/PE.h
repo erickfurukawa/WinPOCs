@@ -103,6 +103,7 @@ private:
     // dotnet related methods -----
     void ParseDotnetMetadata();
     void ParseStringsStream();
+    void ParseUSStream();
 
 public:
     PE(const char* fileName);

@@ -282,6 +282,7 @@ void PE::ParseDotnetMetadata()
     this->dotnetMetadata = metadata;
 
     this->ParseStringsStream();
+    this->ParseUSStream();
 }
 
 void PE::ParseStringsStream()
@@ -293,12 +294,33 @@ void PE::ParseStringsStream()
     this->dotnetMetadata.stringsStream.strings.push_back(std::string(""));
     currAddress++;
     while (currAddress < endAddr) {
-        std::string theStr = std::string((char*)currAddress);
+        std::string theStr = std::string(reinterpret_cast<char*>(currAddress));
         if (theStr.size() == 0) 
         {
             break;
         }
         this->dotnetMetadata.stringsStream.strings.push_back(theStr);
         currAddress += theStr.size() + 1;
+    }
+}
+
+void PE::ParseUSStream()
+{
+    BYTE* currAddress = this->dotnetMetadata.usStream.address;
+    BYTE* endAddr = currAddress + this->dotnetMetadata.usStream.size;
+
+    // first null byte
+    this->dotnetMetadata.usStream.strings.push_back(std::wstring(L""));
+    currAddress++;
+    while (currAddress < endAddr) {
+        UINT8 size = *reinterpret_cast<UINT8*>(currAddress);
+        if (size == 0)
+        {
+            break;
+        }
+        currAddress++;
+        std::wstring theStr = std::wstring(reinterpret_cast<wchar_t*>(currAddress), size / 2);
+        this->dotnetMetadata.usStream.strings.push_back(theStr);
+        currAddress += size;
     }
 }
