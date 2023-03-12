@@ -38,16 +38,19 @@ namespace dotnet
         std::vector<std::string> guids;
     } GUIDStream;
 
-    typedef struct MainStream
+    typedef struct MetadataTablesStream
     {
         std::string streamName;
         BYTE* address;
         DWORD size;
 
-        DWORD reserved;
+        DWORD reserved1; // always 0
         BYTE majorVersion;
         BYTE minorVersion;
         BYTE heapOffsetSizes;
+        BYTE reserved2; // always 1
+        unsigned long long valid;
+        unsigned long long sorted;
 
         // determined by heapOffsetSizes;
         unsigned int stringIndexSize;
@@ -74,7 +77,7 @@ namespace dotnet
         USStream usStream;
         BlobStream blobStream;
         GUIDStream guidStream;
-        MainStream mainStream;
+        MainStream metadataTablesStream;
     } Metadata;
 }
 

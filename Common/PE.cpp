@@ -270,9 +270,9 @@ void PE::ParseDotnetMetadata()
         }
         else if (streamName == "#~")
         {
-            metadata.mainStream.streamName = streamName;
-            metadata.mainStream.address = metadata.baseAddress + streamOffset;
-            metadata.mainStream.size = streamSize;
+            metadata.metadataTablesStream.streamName = streamName;
+            metadata.metadataTablesStream.address = metadata.baseAddress + streamOffset;
+            metadata.metadataTablesStream.size = streamSize;
         }
         else
         {
