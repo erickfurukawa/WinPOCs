@@ -284,6 +284,7 @@ void PE::ParseDotnetMetadata()
     this->ParseStringsStream();
     this->ParseUSStream();
     this->ParseGUIDStream();
+    this->ParseMetadataTablesStream();
 }
 
 void PE::ParseStringsStream()
@@ -348,4 +349,53 @@ void PE::ParseGUIDStream()
         this->dotnetMetadata.guidStream.guids.push_back(theStr);
         currAddress += 16;
     }
+}
+
+void PE::ParseMetadataTablesStream()
+{
+    BYTE* currAddress = this->dotnetMetadata.metadataTablesStream.address;
+    BYTE* endAddr = currAddress + this->dotnetMetadata.metadataTablesStream.size;
+
+    dotnet::MetadataTablesStream metadata = this->dotnetMetadata.metadataTablesStream;
+
+    metadata.reserved1 = *reinterpret_cast<DWORD*>(currAddress);
+    currAddress += sizeof(DWORD);
+
+    metadata.majorVersion = *reinterpret_cast<BYTE*>(currAddress);
+    currAddress += sizeof(BYTE);
+
+    metadata.minorVersion = *reinterpret_cast<BYTE*>(currAddress);
+    currAddress += sizeof(BYTE);
+
+    metadata.heapOffsetSizes = *reinterpret_cast<BYTE*>(currAddress);
+    currAddress += sizeof(BYTE);
+
+    metadata.reserved2 = *reinterpret_cast<BYTE*>(currAddress);
+    currAddress += sizeof(BYTE);
+
+    metadata.valid = *reinterpret_cast<unsigned long long*>(currAddress);
+    currAddress += sizeof(unsigned long long);
+
+    metadata.sorted = *reinterpret_cast<unsigned long long*>(currAddress);
+    currAddress += sizeof(unsigned long long);
+
+    metadata.stringIndexSize = metadata.heapOffsetSizes & 1 ? 4 : 2;
+    metadata.guidIndexSize = metadata.heapOffsetSizes & 2 ? 4 : 2;
+    metadata.blobIndexSize = metadata.heapOffsetSizes & 4 ? 4 : 2;
+
+    // get number of rows of the metadata tables
+    for (int i = 0; i < 64; i++)
+    {
+        if (1ull << i & metadata.valid)
+        {
+            metadata.numberOfRows[i] = *reinterpret_cast<DWORD*>(currAddress);
+            currAddress += sizeof(DWORD);
+        }
+        else
+        {
+            metadata.numberOfRows[i] = 0;
+        }
+    }
+
+    this->dotnetMetadata.metadataTablesStream = metadata;
 }
