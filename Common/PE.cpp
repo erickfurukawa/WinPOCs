@@ -379,21 +379,17 @@ void PE::ParseMetadataTablesStream()
     metadata.sorted = *reinterpret_cast<unsigned long long*>(currAddress);
     currAddress += sizeof(unsigned long long);
 
-    metadata.stringIndexSize = metadata.heapOffsetSizes & 1 ? 4 : 2;
-    metadata.guidIndexSize = metadata.heapOffsetSizes & 2 ? 4 : 2;
-    metadata.blobIndexSize = metadata.heapOffsetSizes & 4 ? 4 : 2;
-
     // get number of rows of the metadata tables
     for (int i = 0; i < 64; i++)
     {
         if (1ull << i & metadata.valid)
         {
-            metadata.numberOfRows[i] = *reinterpret_cast<DWORD*>(currAddress);
+            metadata.tables[i].numberOfRows = *reinterpret_cast<DWORD*>(currAddress);
             currAddress += sizeof(DWORD);
         }
         else
         {
-            metadata.numberOfRows[i] = 0;
+            metadata.tables[i].numberOfRows = 0;
         }
     }
 
