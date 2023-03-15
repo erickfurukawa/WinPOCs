@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Common\MetadataTables.cpp" />
     <ClCompile Include="..\Common\PE.cpp" />
     <ClCompile Include="..\Common\Utils.cpp" />
     <ClCompile Include="main.cpp" />
