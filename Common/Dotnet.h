@@ -53,7 +53,7 @@ namespace dotnet
         unsigned long long sorted;
 
         // metadata tables
-        metadatatables::BaseTable tables[64];
+        metadatatables::BaseTable* tables[64];
     } MetadataTablesStream;
 
     typedef struct Metadata
