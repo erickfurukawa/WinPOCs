@@ -414,7 +414,11 @@ void PE::ParseMetadataTablesStream()
         }
         case dotnet::metadatatables::TablesEnum::TypeRef:
         {
-            table = new dotnet::metadatatables::TypeRef();
+            dotnet::metadatatables::TypeRef* typeRefTable = new dotnet::metadatatables::TypeRef();
+            typeRefTable->numberOfRows = numberOfRows;
+            typeRefTable->ReadData(&currAddress, sizes);
+
+            table = typeRefTable;
             break;
         }
         case dotnet::metadatatables::TablesEnum::TypeDef:

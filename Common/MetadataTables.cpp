@@ -8,7 +8,7 @@ namespace
 		int numberOfTags = 0;
 		for (int i = 0; i < 64; i++)
 		{
-			if (1ull << i & mask)
+			if ((1ull << i) & mask)
 			{
 				numberOfTags++;
 			}
@@ -21,7 +21,7 @@ namespace
 		int tagSize = 0;
 		for (tagSize = 0; ; tagSize++)
 		{
-			if (1 << tagSize >= numberOfTags)
+			if ((1 << tagSize) >= numberOfTags)
 			{
 				break;
 			}
@@ -30,7 +30,7 @@ namespace
 		DWORD maxRows = 0;
 		for (int i = 0; i < 64; i++)
 		{
-			if (1ull << i & mask)
+			if ((1ull << i) & mask)
 			{
 				if (tableRows[i] > maxRows)
 				{
@@ -40,7 +40,7 @@ namespace
 		}
 
 		unsigned int maxIndex = 1 << (sizeof(WORD) * 8 - tagSize);
-		if (maxIndex > maxRows)
+		if (maxIndex < maxRows)
 			return 4;
 		return 2;
 	}
@@ -172,6 +172,19 @@ namespace dotnet
 			this->mvid = ReadIndex(pTableAddress, sizes.guid);
 			this->encId = ReadIndex(pTableAddress, sizes.guid);
 			this->encBaseId = ReadIndex(pTableAddress, sizes.guid);
+		}
+
+		void TypeRef::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				TypeRefEntry entry = {};
+				entry.resolutionScope = ReadIndex(pTableAddress, sizes.resolutionScope);
+				entry.typeName = ReadIndex(pTableAddress, sizes.string);
+				entry.typeNamespace = ReadIndex(pTableAddress, sizes.string);
+
+				this->entries.push_back(entry);
+			}
 		}
 	}
 }

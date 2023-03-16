@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include <vector>
 
 namespace dotnet
 {
@@ -69,7 +70,16 @@ namespace dotnet
 			unsigned char resolutionScope;
 		} IndexSizes;
 
-		// base class
+		// table entries ----------------------------------------------------------------
+		typedef struct TypeRefEntry
+		{
+			DWORD resolutionScope;
+			DWORD typeName;
+			DWORD typeNamespace;
+		} TypeRefEntry;
+
+		// metadata tables ----------------------------------------------------------------
+		// base class 
 		class BaseTable
 		{
 		public:
@@ -88,7 +98,13 @@ namespace dotnet
 			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
 		};
 
-		class TypeRef : public BaseTable {};
+		class TypeRef : public BaseTable
+		{
+		public:
+			std::vector<TypeRefEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
 		class TypeDef : public BaseTable {};
 		class Field : public BaseTable {};
 		class MethodDef : public BaseTable {};
