@@ -39,6 +39,37 @@ namespace
         headers->pSectionHeader = IMAGE_FIRST_SECTION(headers->pNTHeaders64); // bits doesn`t matter here
         return true;
     }
+
+    unsigned char GetBlobSize(BYTE* address, DWORD* size)
+    {
+        *size = 0;
+        BYTE first = *address;
+        BYTE second = *(address + 1);
+        BYTE third = *(address + 2);
+        BYTE fourth = *(address + 3);
+
+        if ((first & 0b11000000) == 0b11000000)
+        {
+            first = first & 0b00011111;
+            *size += first << 24;
+            *size += second << 16;
+            *size += third << 8;
+            *size += fourth;
+            return 4;
+        }
+        else if ((first & 0b10000000) == 0b10000000)
+        {
+            first = first & 0b00111111;
+            *size += first << 8;
+            *size += second;
+            return 2;
+        }
+        else
+        {
+            *size = first;
+            return 1;
+        }
+    }
 }
 
 PE::PE(const char* fileName)
@@ -306,7 +337,6 @@ void PE::ParseStringsStream()
     }
 }
 
-// TODO: fix. it's broken
 void PE::ParseUSStream()
 {
     BYTE* currAddress = this->dotnetMetadata.usStream.address;
@@ -316,12 +346,15 @@ void PE::ParseUSStream()
     this->dotnetMetadata.usStream.strings.push_back(std::wstring(L""));
     currAddress++;
     while (currAddress < endAddr) {
-        UINT8 size = *reinterpret_cast<UINT8*>(currAddress);
+        DWORD size = 0;
+        unsigned char nBytes;
+        nBytes = GetBlobSize(currAddress, &size);
+        currAddress += nBytes;
+
         if (size == 0)
         {
             break;
         }
-        currAddress++;
         std::wstring theStr = std::wstring(reinterpret_cast<wchar_t*>(currAddress), size / 2);
         this->dotnetMetadata.usStream.strings.push_back(theStr);
         currAddress += size;
