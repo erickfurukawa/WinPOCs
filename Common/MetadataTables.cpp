@@ -166,6 +166,11 @@ namespace dotnet
 			return sizes;
 		}
 
+		void BaseTable::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			return;
+		}
+
 		void Module::ReadData(BYTE** pTableAddress, IndexSizes sizes)
 		{
 			this->generation = *reinterpret_cast<WORD*>(*pTableAddress);

@@ -436,211 +436,196 @@ void PE::ParseMetadataTablesStream()
         dotnet::metadatatables::BaseTable* table;
         switch (i)
         {
-        case dotnet::metadatatables::TablesEnum::Module:
-        {
-            dotnet::metadatatables::Module* moduleTable = new dotnet::metadatatables::Module();
-            moduleTable->numberOfRows = numberOfRows;
-            moduleTable->ReadData(&currAddress, sizes);
-
-            table = moduleTable;
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::TypeRef:
-        {
-            dotnet::metadatatables::TypeRef* typeRefTable = new dotnet::metadatatables::TypeRef();
-            typeRefTable->numberOfRows = numberOfRows;
-            typeRefTable->ReadData(&currAddress, sizes);
-
-            table = typeRefTable;
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::TypeDef:
-        {
-            dotnet::metadatatables::TypeDef* typeDefTable = new dotnet::metadatatables::TypeDef();
-            typeDefTable->numberOfRows = numberOfRows;
-            typeDefTable->ReadData(&currAddress, sizes);
-
-            table = typeDefTable;
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::Field:
-        {
-            dotnet::metadatatables::Field* fieldTable = new dotnet::metadatatables::Field();
-            fieldTable->numberOfRows = numberOfRows;
-            fieldTable->ReadData(&currAddress, sizes);
-
-            table = fieldTable;
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::MethodDef:
-        {
-            table = new dotnet::metadatatables::MethodDef();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::Param:
-        {
-            table = new dotnet::metadatatables::Param();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::InterfaceImpl:
-        {
-            table = new dotnet::metadatatables::InterfaceImpl();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::MemberRef:
-        {
-            table = new dotnet::metadatatables::MemberRef();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::Constant:
-        {
-            table = new dotnet::metadatatables::Constant();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::CustomAttribute:
-        {
-            table = new dotnet::metadatatables::CustomAttribute();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::FieldMarshal:
-        {
-            table = new dotnet::metadatatables::FieldMarshal();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::DeclSecurity:
-        {
-            table = new dotnet::metadatatables::DeclSecurity();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::ClassLayout:
-        {
-            table = new dotnet::metadatatables::ClassLayout();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::FieldLayout:
-        {
-            table = new dotnet::metadatatables::FieldLayout();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::StandAloneSig:
-        {
-            table = new dotnet::metadatatables::StandAloneSig();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::EventMap:
-        {
-            table = new dotnet::metadatatables::EventMap();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::Event:
-        {
-            table = new dotnet::metadatatables::Event();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::PropertyMap:
-        {
-            table = new dotnet::metadatatables::PropertyMap();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::Property:
-        {
-            table = new dotnet::metadatatables::Property();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::MethodSemantics:
-        {
-            table = new dotnet::metadatatables::MethodSemantics();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::MethodImpl:
-        {
-            table = new dotnet::metadatatables::MethodImpl();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::ModuleRef:
-        {
-            table = new dotnet::metadatatables::ModuleRef();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::TypeSpec:
-        {
-            table = new dotnet::metadatatables::TypeSpec();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::ImplMap:
-        {
-            table = new dotnet::metadatatables::ImplMap();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::FieldRVA:
-        {
-            table = new dotnet::metadatatables::FieldRVA();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::Assembly:
-        {
-            table = new dotnet::metadatatables::Assembly();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::AssemblyProcessor:
-        {
-            table = new dotnet::metadatatables::AssemblyProcessor();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::AssemblyOS:
-        {
-            table = new dotnet::metadatatables::AssemblyOS();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::AssemblyRef:
-        {
-            table = new dotnet::metadatatables::AssemblyRef();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::AssemblyRefProcessor:
-        {
-            table = new dotnet::metadatatables::AssemblyRefProcessor();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::AssemblyRefOS:
-        {
-            table = new dotnet::metadatatables::AssemblyRefOS();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::File:
-        {
-            table = new dotnet::metadatatables::File();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::ExportedType:
-        {
-            table = new dotnet::metadatatables::ExportedType();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::ManifestResource:
-        {
-            table = new dotnet::metadatatables::ManifestResource();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::NestedClass:
-        {
-            table = new dotnet::metadatatables::NestedClass();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::GenericParam:
-        {
-            table = new dotnet::metadatatables::GenericParam();
-            break;
-        }
-        case dotnet::metadatatables::TablesEnum::GenericParamConstraint:
-        {
-            table = new dotnet::metadatatables::GenericParamConstraint();
-            break;
-        }
-        default:
-            table = new dotnet::metadatatables::BaseTable();
+            case dotnet::metadatatables::TablesEnum::Module:
+            {
+                table = new dotnet::metadatatables::Module();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::TypeRef:
+            {
+                table = new dotnet::metadatatables::TypeRef();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::TypeDef:
+            {
+                table = new dotnet::metadatatables::TypeDef();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::Field:
+            {
+                table = new dotnet::metadatatables::Field();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::MethodDef:
+            {
+                table = new dotnet::metadatatables::MethodDef();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::Param:
+            {
+                table = new dotnet::metadatatables::Param();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::InterfaceImpl:
+            {
+                table = new dotnet::metadatatables::InterfaceImpl();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::MemberRef:
+            {
+                table = new dotnet::metadatatables::MemberRef();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::Constant:
+            {
+                table = new dotnet::metadatatables::Constant();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::CustomAttribute:
+            {
+                table = new dotnet::metadatatables::CustomAttribute();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::FieldMarshal:
+            {
+                table = new dotnet::metadatatables::FieldMarshal();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::DeclSecurity:
+            {
+                table = new dotnet::metadatatables::DeclSecurity();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::ClassLayout:
+            {
+                table = new dotnet::metadatatables::ClassLayout();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::FieldLayout:
+            {
+                table = new dotnet::metadatatables::FieldLayout();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::StandAloneSig:
+            {
+                table = new dotnet::metadatatables::StandAloneSig();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::EventMap:
+            {
+                table = new dotnet::metadatatables::EventMap();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::Event:
+            {
+                table = new dotnet::metadatatables::Event();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::PropertyMap:
+            {
+                table = new dotnet::metadatatables::PropertyMap();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::Property:
+            {
+                table = new dotnet::metadatatables::Property();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::MethodSemantics:
+            {
+                table = new dotnet::metadatatables::MethodSemantics();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::MethodImpl:
+            {
+                table = new dotnet::metadatatables::MethodImpl();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::ModuleRef:
+            {
+                table = new dotnet::metadatatables::ModuleRef();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::TypeSpec:
+            {
+                table = new dotnet::metadatatables::TypeSpec();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::ImplMap:
+            {
+                table = new dotnet::metadatatables::ImplMap();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::FieldRVA:
+            {
+                table = new dotnet::metadatatables::FieldRVA();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::Assembly:
+            {
+                table = new dotnet::metadatatables::Assembly();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::AssemblyProcessor:
+            {
+                table = new dotnet::metadatatables::AssemblyProcessor();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::AssemblyOS:
+            {
+                table = new dotnet::metadatatables::AssemblyOS();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::AssemblyRef:
+            {
+                table = new dotnet::metadatatables::AssemblyRef();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::AssemblyRefProcessor:
+            {
+                table = new dotnet::metadatatables::AssemblyRefProcessor();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::AssemblyRefOS:
+            {
+                table = new dotnet::metadatatables::AssemblyRefOS();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::File:
+            {
+                table = new dotnet::metadatatables::File();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::ExportedType:
+            {
+                table = new dotnet::metadatatables::ExportedType();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::ManifestResource:
+            {
+                table = new dotnet::metadatatables::ManifestResource();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::NestedClass:
+            {
+                table = new dotnet::metadatatables::NestedClass();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::GenericParam:
+            {
+                table = new dotnet::metadatatables::GenericParam();
+                break;
+            }
+            case dotnet::metadatatables::TablesEnum::GenericParamConstraint:
+            {
+                table = new dotnet::metadatatables::GenericParamConstraint();
+                break;
+            }
+            default:
+                table = new dotnet::metadatatables::BaseTable();
         }
         table->numberOfRows = tableRows[i];
+        table->ReadData(&currAddress, sizes);
         metadata.tables[i] = table;
     }
     this->dotnetMetadata.metadataTablesStream = metadata;

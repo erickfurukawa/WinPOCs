@@ -105,6 +105,7 @@ namespace dotnet
 		{
 		public:
 			DWORD numberOfRows = 0;
+			virtual void ReadData(BYTE** pTableAddress, IndexSizes sizes);
 		};
 
 		class Module : public BaseTable
