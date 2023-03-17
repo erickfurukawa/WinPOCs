@@ -75,6 +75,7 @@ namespace dotnet
 
 			sizes.field = tableRows[TablesEnum::Field] > 0xFFFF ? 4 : 2;
 			sizes.methodDef = tableRows[TablesEnum::MethodDef] > 0xFFFF ? 4 : 2;
+			sizes.param = tableRows[TablesEnum::Param] > 0xFFFF ? 4 : 2;
 
 			unsigned long long typeDefOrRefMask = 0;
 			typeDefOrRefMask |= 1ull << TablesEnum::TypeDef;
@@ -219,6 +220,22 @@ namespace dotnet
 				entry.flags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
 				entry.name = ReadIndex(pTableAddress, sizes.string);
 				entry.signature = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void MethodDef::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				MethodDefEntry entry = {};
+				entry.rva = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.implFlags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.flags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.signature = ReadIndex(pTableAddress, sizes.blob);
+				entry.paramList = ReadIndex(pTableAddress, sizes.param);
 
 				this->entries.push_back(entry);
 			}

@@ -58,6 +58,7 @@ namespace dotnet
 			unsigned char blob;
 			unsigned char field;
 			unsigned char methodDef;
+			unsigned char param;
 
 			// coded indexes
 			unsigned char typeDefOrRef;
@@ -98,6 +99,16 @@ namespace dotnet
 			DWORD name;
 			DWORD signature;
 		} FieldEntry;
+
+		typedef struct MethodDefEntry
+		{
+			DWORD rva;
+			WORD implFlags;
+			WORD flags;
+			DWORD name;
+			DWORD signature;
+			DWORD paramList;
+		} MethodDefEntry;
 
 		// metadata tables ----------------------------------------------------------------
 		// base class 
@@ -141,7 +152,13 @@ namespace dotnet
 			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
 		};
 
-		class MethodDef : public BaseTable {};
+		class MethodDef : public BaseTable
+		{
+		public:
+			std::vector<MethodDefEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
 		class Param : public BaseTable {};
 		class InterfaceImpl : public BaseTable {};
 		class MemberRef : public BaseTable {};
