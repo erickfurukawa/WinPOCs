@@ -110,6 +110,13 @@ namespace dotnet
 			DWORD paramList;
 		} MethodDefEntry;
 
+		typedef struct ParamEntry
+		{
+			WORD flags;
+			WORD sequence;
+			DWORD name;
+		} ParamEntry;
+
 		// metadata tables ----------------------------------------------------------------
 		// base class 
 		class BaseTable
@@ -159,7 +166,12 @@ namespace dotnet
 			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
 		};
 
-		class Param : public BaseTable {};
+		class Param : public BaseTable
+		{
+		public:
+			std::vector<ParamEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
 		class InterfaceImpl : public BaseTable {};
 		class MemberRef : public BaseTable {};
 		class Constant : public BaseTable {};

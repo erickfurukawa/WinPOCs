@@ -240,5 +240,18 @@ namespace dotnet
 				this->entries.push_back(entry);
 			}
 		}
+
+		void Param::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				ParamEntry entry = {};
+				entry.flags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.sequence = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+
+				this->entries.push_back(entry);
+			}
+		}
 	}
 }
