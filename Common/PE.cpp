@@ -456,12 +456,20 @@ void PE::ParseMetadataTablesStream()
         }
         case dotnet::metadatatables::TablesEnum::TypeDef:
         {
-            table = new dotnet::metadatatables::TypeDef();
+            dotnet::metadatatables::TypeDef* typeDefTable = new dotnet::metadatatables::TypeDef();
+            typeDefTable->numberOfRows = numberOfRows;
+            typeDefTable->ReadData(&currAddress, sizes);
+
+            table = typeDefTable;
             break;
         }
         case dotnet::metadatatables::TablesEnum::Field:
         {
-            table = new dotnet::metadatatables::Field();
+            dotnet::metadatatables::Field* fieldTable = new dotnet::metadatatables::Field();
+            fieldTable->numberOfRows = numberOfRows;
+            fieldTable->ReadData(&currAddress, sizes);
+
+            table = fieldTable;
             break;
         }
         case dotnet::metadatatables::TablesEnum::MethodDef:

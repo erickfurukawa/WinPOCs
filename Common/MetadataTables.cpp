@@ -73,6 +73,9 @@ namespace dotnet
 			sizes.guid = heapOffsetSizes & 2 ? 4 : 2;
 			sizes.blob = heapOffsetSizes & 4 ? 4 : 2;
 
+			sizes.field = tableRows[TablesEnum::Field] > 0xFFFF ? 4 : 2;
+			sizes.methodDef = tableRows[TablesEnum::MethodDef] > 0xFFFF ? 4 : 2;
+
 			unsigned long long typeDefOrRefMask = 0;
 			typeDefOrRefMask |= 1ull << TablesEnum::TypeDef;
 			typeDefOrRefMask |= 1ull << TablesEnum::TypeRef;
@@ -182,6 +185,35 @@ namespace dotnet
 				entry.resolutionScope = ReadIndex(pTableAddress, sizes.resolutionScope);
 				entry.typeName = ReadIndex(pTableAddress, sizes.string);
 				entry.typeNamespace = ReadIndex(pTableAddress, sizes.string);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void TypeDef::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				TypeDefEntry entry = {};
+				entry.flags = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.typeName = ReadIndex(pTableAddress, sizes.string);
+				entry.typeNamespace = ReadIndex(pTableAddress, sizes.string);
+				entry.extends = ReadIndex(pTableAddress, sizes.typeDefOrRef);
+				entry.fieldList = ReadIndex(pTableAddress, sizes.field);
+				entry.methodList = ReadIndex(pTableAddress, sizes.methodDef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void Field::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				FieldEntry entry = {};
+				entry.flags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.signature = ReadIndex(pTableAddress, sizes.blob);
 
 				this->entries.push_back(entry);
 			}
