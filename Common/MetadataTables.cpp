@@ -73,6 +73,7 @@ namespace dotnet
 			sizes.guid = heapOffsetSizes & 2 ? 4 : 2;
 			sizes.blob = heapOffsetSizes & 4 ? 4 : 2;
 
+			sizes.typeDef = tableRows[TablesEnum::TypeDef] > 0xFFFF ? 4 : 2;
 			sizes.field = tableRows[TablesEnum::Field] > 0xFFFF ? 4 : 2;
 			sizes.methodDef = tableRows[TablesEnum::MethodDef] > 0xFFFF ? 4 : 2;
 			sizes.param = tableRows[TablesEnum::Param] > 0xFFFF ? 4 : 2;
@@ -249,6 +250,44 @@ namespace dotnet
 				entry.flags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
 				entry.sequence = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
 				entry.name = ReadIndex(pTableAddress, sizes.string);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void InterfaceImpl::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				InterfaceImplEntry entry = {};
+				entry.classIndex = ReadIndex(pTableAddress, sizes.typeDef);
+				entry.interfaceIndex = ReadIndex(pTableAddress, sizes.typeDefOrRef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void MemberRef::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				MemberRefEntry entry = {};
+				entry.classIndex = ReadIndex(pTableAddress, sizes.memberRefParent);
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.signature = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void Constant::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				ConstantEntry entry = {};
+				entry.type = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.parent = ReadIndex(pTableAddress, sizes.hasConstant);
+				entry.value = ReadIndex(pTableAddress, sizes.blob);
 
 				this->entries.push_back(entry);
 			}

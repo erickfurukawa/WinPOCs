@@ -56,6 +56,7 @@ namespace dotnet
 			unsigned char string;
 			unsigned char guid;
 			unsigned char blob;
+			unsigned char typeDef;
 			unsigned char field;
 			unsigned char methodDef;
 			unsigned char param;
@@ -117,6 +118,26 @@ namespace dotnet
 			DWORD name;
 		} ParamEntry;
 
+		typedef struct InterfaceImplEntry
+		{
+			DWORD classIndex;
+			DWORD interfaceIndex;
+		} InterfaceImplEntry;
+
+		typedef struct MemberRefEntry
+		{
+			DWORD classIndex;
+			DWORD name;
+			DWORD signature;
+		} MemberRefEntry;
+
+		typedef struct ConstantEntry
+		{
+			WORD type;
+			DWORD parent;
+			DWORD value;
+		} ConstantEntry;
+
 		// metadata tables ----------------------------------------------------------------
 		// base class 
 		class BaseTable
@@ -172,9 +193,28 @@ namespace dotnet
 			std::vector<ParamEntry> entries;
 			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
 		};
-		class InterfaceImpl : public BaseTable {};
-		class MemberRef : public BaseTable {};
-		class Constant : public BaseTable {};
+
+		class InterfaceImpl : public BaseTable
+		{
+		public:
+			std::vector<InterfaceImplEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class MemberRef : public BaseTable
+		{
+		public:
+			std::vector<MemberRefEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class Constant : public BaseTable
+		{
+		public:
+			std::vector<ConstantEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
 		class CustomAttribute : public BaseTable {};
 		class FieldMarshal : public BaseTable {};
 		class DeclSecurity : public BaseTable {};
