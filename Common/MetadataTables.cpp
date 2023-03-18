@@ -77,6 +77,8 @@ namespace dotnet
 			sizes.field = tableRows[TablesEnum::Field] > 0xFFFF ? 4 : 2;
 			sizes.methodDef = tableRows[TablesEnum::MethodDef] > 0xFFFF ? 4 : 2;
 			sizes.param = tableRows[TablesEnum::Param] > 0xFFFF ? 4 : 2;
+			sizes.event = tableRows[TablesEnum::Event] > 0xFFFF ? 4 : 2;
+			sizes.property = tableRows[TablesEnum::Property] > 0xFFFF ? 4 : 2;
 
 			unsigned long long typeDefOrRefMask = 0;
 			typeDefOrRefMask |= 1ull << TablesEnum::TypeDef;
@@ -288,6 +290,167 @@ namespace dotnet
 				entry.type = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
 				entry.parent = ReadIndex(pTableAddress, sizes.hasConstant);
 				entry.value = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void CustomAttribute::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				CustomAttributeEntry entry = {};
+				entry.parent = ReadIndex(pTableAddress, sizes.hasCustomAttribute);
+				entry.type = ReadIndex(pTableAddress, sizes.customAttributeType);
+				entry.value = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void FieldMarshal::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				FieldMarshalEntry entry = {};
+				entry.parent = ReadIndex(pTableAddress, sizes.hasFieldMarshall);
+				entry.nativeType = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void DeclSecurity::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				DeclSecurityEntry entry = {};
+				entry.action = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.parent = ReadIndex(pTableAddress, sizes.hasDeclSecurity);
+				entry.permissionSet = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void ClassLayout::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				ClassLayoutEntry entry = {};
+				entry.packingSize = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.classSize = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.parent = ReadIndex(pTableAddress, sizes.typeDef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void FieldLayout::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				FieldLayoutEntry entry = {};
+				entry.offset = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.field = ReadIndex(pTableAddress, sizes.field);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void StandAloneSig::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				StandAloneSigEntry entry = {};
+				entry.signature = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void EventMap::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				EventMapEntry entry = {};
+				entry.parent = ReadIndex(pTableAddress, sizes.typeDef);
+				entry.eventList = ReadIndex(pTableAddress, sizes.event);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void Event::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				EventEntry entry = {};
+				entry.eventFlags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.eventType = ReadIndex(pTableAddress, sizes.typeDefOrRef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void PropertyMap::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				PropertyMapEntry entry = {};
+				entry.parent = ReadIndex(pTableAddress, sizes.typeDef);
+				entry.propertyList = ReadIndex(pTableAddress, sizes.property);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void Property::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				PropertyEntry entry = {};
+				entry.flags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.type = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void MethodSemantics::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				MethodSemanticsEntry entry = {};
+				entry.semantics = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.method = ReadIndex(pTableAddress, sizes.methodDef);
+				entry.association = ReadIndex(pTableAddress, sizes.hasSemantics);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void MethodImpl::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				MethodImplEntry entry = {};
+				entry.classIndex = ReadIndex(pTableAddress, sizes.typeDef);
+				entry.methodBody = ReadIndex(pTableAddress, sizes.methodDefOrRef);
+				entry.methodDeclaration = ReadIndex(pTableAddress, sizes.methodDefOrRef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void ModuleRef::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				ModuleRefEntry entry = {};
+				entry.name = ReadIndex(pTableAddress, sizes.string);
 
 				this->entries.push_back(entry);
 			}

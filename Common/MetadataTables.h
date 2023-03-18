@@ -60,6 +60,8 @@ namespace dotnet
 			unsigned char field;
 			unsigned char methodDef;
 			unsigned char param;
+			unsigned char event; 
+			unsigned char property;
 
 			// coded indexes
 			unsigned char typeDefOrRef;
@@ -138,6 +140,89 @@ namespace dotnet
 			DWORD value;
 		} ConstantEntry;
 
+		typedef struct CustomAttributeEntry
+		{
+			DWORD parent;
+			DWORD type;
+			DWORD value;
+		} CustomAttributeEntry;
+
+		typedef struct FieldMarshalEntry
+		{
+			DWORD parent;
+			DWORD nativeType;
+		} FieldMarshalEntry;
+
+		typedef struct DeclSecurityEntry
+		{
+			WORD action;
+			DWORD parent;
+			DWORD permissionSet;
+		} DeclSecurityEntry;
+
+		typedef struct ClassLayoutEntry
+		{
+			WORD packingSize;
+			DWORD classSize;
+			DWORD parent;
+		} ClassLayoutEntry;
+
+		typedef struct FieldLayoutEntry
+		{
+			DWORD offset;
+			DWORD field;
+		} FieldLayoutEntry;
+
+		typedef struct StandAloneSigEntry
+		{
+			DWORD signature;
+		} StandAloneSigEntry;
+
+		typedef struct EventMapEntry
+		{
+			DWORD parent;
+			DWORD eventList;
+		} EventMapEntry;
+
+		typedef struct EventEntry
+		{
+			WORD eventFlags;
+			DWORD name;
+			DWORD eventType;
+		} EventEntry;
+
+		typedef struct PropertyMapEntry
+		{
+			DWORD parent;
+			DWORD propertyList;
+		} PropertyMapEntry;
+
+		typedef struct PropertyEntry
+		{
+			WORD flags;
+			DWORD name;
+			DWORD type;
+		} PropertyEntry;
+
+		typedef struct MethodSemanticsEntry
+		{
+			WORD semantics;
+			DWORD method;
+			DWORD association;
+		} MethodSemanticsEntry;
+
+		typedef struct MethodImplEntry
+		{
+			DWORD classIndex;
+			DWORD methodBody;
+			DWORD methodDeclaration;
+		} MethodImplEntry;
+
+		typedef struct ModuleRefEntry
+		{
+			DWORD name;
+		} ModuleRefEntry;
+
 		// metadata tables ----------------------------------------------------------------
 		// base class 
 		class BaseTable
@@ -215,19 +300,96 @@ namespace dotnet
 			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
 		};
 
-		class CustomAttribute : public BaseTable {};
-		class FieldMarshal : public BaseTable {};
-		class DeclSecurity : public BaseTable {};
-		class ClassLayout : public BaseTable {};
-		class FieldLayout : public BaseTable {};
-		class StandAloneSig : public BaseTable {};
-		class EventMap : public BaseTable {};
-		class Event : public BaseTable {};
-		class PropertyMap : public BaseTable {};
-		class Property : public BaseTable {};
-		class MethodSemantics : public BaseTable {};
-		class MethodImpl : public BaseTable {};
-		class ModuleRef : public BaseTable {};
+		class CustomAttribute : public BaseTable
+		{
+		public:
+			std::vector<CustomAttributeEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class FieldMarshal : public BaseTable
+		{
+		public:
+			std::vector<FieldMarshalEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class DeclSecurity : public BaseTable
+		{
+		public:
+			std::vector<DeclSecurityEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class ClassLayout : public BaseTable
+		{
+		public:
+			std::vector<ClassLayoutEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class FieldLayout : public BaseTable {
+		public:
+			std::vector<FieldLayoutEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class StandAloneSig : public BaseTable
+		{
+		public:
+			std::vector<StandAloneSigEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class EventMap : public BaseTable
+		{
+		public:
+			std::vector<EventMapEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class Event : public BaseTable
+		{
+		public:
+			std::vector<EventEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class PropertyMap : public BaseTable
+		{
+		public:
+			std::vector<PropertyMapEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class Property : public BaseTable
+		{
+		public:
+			std::vector<PropertyEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class MethodSemantics : public BaseTable
+		{
+		public:
+			std::vector<MethodSemanticsEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class MethodImpl : public BaseTable
+		{
+		public:
+			std::vector<MethodImplEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class ModuleRef : public BaseTable
+		{
+		public:
+			std::vector<ModuleRefEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
 		class TypeSpec : public BaseTable {};
 		class ImplMap : public BaseTable {};
 		class FieldRVA : public BaseTable {};
