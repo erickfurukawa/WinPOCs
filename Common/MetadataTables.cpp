@@ -79,6 +79,9 @@ namespace dotnet
 			sizes.param = tableRows[TablesEnum::Param] > 0xFFFF ? 4 : 2;
 			sizes.event = tableRows[TablesEnum::Event] > 0xFFFF ? 4 : 2;
 			sizes.property = tableRows[TablesEnum::Property] > 0xFFFF ? 4 : 2;
+			sizes.moduleRef = tableRows[TablesEnum::ModuleRef] > 0xFFFF ? 4 : 2;
+			sizes.assemblyRef = tableRows[TablesEnum::AssemblyRef] > 0xFFFF ? 4 : 2;
+			sizes.genericParam = tableRows[TablesEnum::GenericParam] > 0xFFFF ? 4 : 2;
 
 			unsigned long long typeDefOrRefMask = 0;
 			typeDefOrRefMask |= 1ull << TablesEnum::TypeDef;
@@ -166,6 +169,11 @@ namespace dotnet
 			resolutionScopeMask |= 1ull << TablesEnum::AssemblyRef;
 			resolutionScopeMask |= 1ull << TablesEnum::TypeRef;
 			sizes.resolutionScope = GetIndexSize(tableRows, resolutionScopeMask);
+
+			unsigned long long typeOrMethodDefMask = 0;
+			typeOrMethodDefMask |= 1ull << TablesEnum::TypeDef;
+			typeOrMethodDefMask |= 1ull << TablesEnum::MethodDef;
+			sizes.typeOrMethodDef = GetIndexSize(tableRows, typeOrMethodDefMask);
 
 			return sizes;
 		}
@@ -451,6 +459,223 @@ namespace dotnet
 			{
 				ModuleRefEntry entry = {};
 				entry.name = ReadIndex(pTableAddress, sizes.string);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void TypeSpec::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				TypeSpecEntry entry = {};
+				entry.signature = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void ImplMap::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				ImplMapEntry entry = {};
+				entry.mappingFlags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.memberForwarded = ReadIndex(pTableAddress, sizes.memberForwarded);
+				entry.importName = ReadIndex(pTableAddress, sizes.string);
+				entry.importScope = ReadIndex(pTableAddress, sizes.moduleRef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void FieldRVA::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				FieldRVAEntry entry = {};
+				entry.rva = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.field = ReadIndex(pTableAddress, sizes.field);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void Assembly::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				AssemblyEntry entry = {};
+				entry.hashAlgId = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.majorVersion = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.minorVersion = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.buildNumber = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.revisionNumber = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.flags = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.publicKey = ReadIndex(pTableAddress, sizes.blob);
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.culture = ReadIndex(pTableAddress, sizes.string);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void AssemblyProcessor::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				AssemblyProcessorEntry entry = {};
+				entry.processor = ReadIndex(pTableAddress, sizeof(DWORD));
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void AssemblyOS::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				AssemblyOSEntry entry = {};
+				entry.OSPlatformID = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.OSMajorVersion = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.OSMinorVersion = ReadIndex(pTableAddress, sizeof(DWORD));
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void AssemblyRef::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				AssemblyRefEntry entry = {};
+				entry.majorVersion = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.minorVersion = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.buildNumber = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.revisionNumber = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.flags = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.publicKeyOrToken = ReadIndex(pTableAddress, sizes.blob);
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.culture = ReadIndex(pTableAddress, sizes.string);
+				entry.hashValue = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void AssemblyRefProcessor::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				AssemblyRefProcessorEntry entry = {};
+				entry.processor = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.assemblyRef = ReadIndex(pTableAddress, sizes.assemblyRef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void AssemblyRefOS::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				AssemblyRefOSEntry entry = {};
+				entry.OSPlatformId = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.OSMajorVersion = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.OSMinorVersion = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.assemblyRef = ReadIndex(pTableAddress, sizes.assemblyRef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void File::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				FileEntry entry = {};
+				entry.flags = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.hashValue = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void ExportedType::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				ExportedTypeEntry entry = {};
+				entry.flags = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.typeDefId = ReadIndex(pTableAddress, sizes.typeDef);
+				entry.typeName = ReadIndex(pTableAddress, sizes.string);
+				entry.typeNamespace = ReadIndex(pTableAddress, sizes.string);
+				entry.implementation = ReadIndex(pTableAddress, sizes.implementation);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void ManifestResource::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				ManifestResourceEntry entry = {};
+				entry.offset = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.flags = ReadIndex(pTableAddress, sizeof(DWORD));
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+				entry.implementation = ReadIndex(pTableAddress, sizes.implementation);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void NestedClass::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				NestedClassEntry entry = {};
+				entry.nestedClass = ReadIndex(pTableAddress, sizes.typeDef);
+				entry.enclosingClass = ReadIndex(pTableAddress, sizes.typeDef);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void GenericParam::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				GenericParamEntry entry = {};
+				entry.number = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.flags = static_cast<WORD>(ReadIndex(pTableAddress, sizeof(WORD)));
+				entry.owner = ReadIndex(pTableAddress, sizes.typeOrMethodDef);
+				entry.name = ReadIndex(pTableAddress, sizes.string);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void MethodSpec::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				MethodSpecEntry entry = {};
+				entry.method = ReadIndex(pTableAddress, sizes.methodDefOrRef);
+				entry.instantiation = ReadIndex(pTableAddress, sizes.blob);
+
+				this->entries.push_back(entry);
+			}
+		}
+
+		void GenericParamConstraint::ReadData(BYTE** pTableAddress, IndexSizes sizes)
+		{
+			for (unsigned int i = 0; i < this->numberOfRows; i++)
+			{
+				GenericParamConstraintEntry entry = {};
+				entry.owner = ReadIndex(pTableAddress, sizes.genericParam);
+				entry.constraint = ReadIndex(pTableAddress, sizes.typeDefOrRef);
 
 				this->entries.push_back(entry);
 			}

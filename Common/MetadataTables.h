@@ -47,6 +47,7 @@ namespace dotnet
 				ManifestResource = 40,
 				NestedClass = 41,
 				GenericParam = 42,
+				MethodSpec = 43,
 				GenericParamConstraint = 44
 			};
 		}
@@ -62,6 +63,9 @@ namespace dotnet
 			unsigned char param;
 			unsigned char event; 
 			unsigned char property;
+			unsigned char moduleRef;
+			unsigned char assemblyRef;
+			unsigned char genericParam;
 
 			// coded indexes
 			unsigned char typeDefOrRef;
@@ -76,6 +80,7 @@ namespace dotnet
 			unsigned char implementation;
 			unsigned char customAttributeType;
 			unsigned char resolutionScope;
+			unsigned char typeOrMethodDef;
 		} IndexSizes;
 
 		// table entries ----------------------------------------------------------------
@@ -222,6 +227,128 @@ namespace dotnet
 		{
 			DWORD name;
 		} ModuleRefEntry;
+
+		typedef struct TypeSpecEntry
+		{
+			DWORD signature;
+		} TypeSpecEntry;
+
+		typedef struct ImplMapEntry
+		{
+			WORD mappingFlags;
+			DWORD memberForwarded;
+			DWORD importName;
+			DWORD importScope;
+		} ImplMapEntry;
+
+		typedef struct FieldRVAEntry
+		{
+			DWORD rva;
+			DWORD field;
+		} FieldRVAEntry;
+
+		typedef struct AssemblyEntry
+		{
+			DWORD hashAlgId;
+			WORD majorVersion;
+			WORD minorVersion;
+			WORD buildNumber;
+			WORD revisionNumber;
+			DWORD flags;
+			DWORD publicKey;
+			DWORD name;
+			DWORD culture;
+		} AssemblyEntry;
+
+		typedef struct AssemblyProcessorEntry
+		{
+			DWORD processor;
+		} AssemblyProcessorEntry;
+
+		typedef struct AssemblyOSEntry
+		{
+			DWORD OSPlatformID;
+			DWORD OSMajorVersion;
+			DWORD OSMinorVersion;
+		} AssemblyOSEntry;
+
+		typedef struct AssemblyRefEntry
+		{
+			WORD majorVersion;
+			WORD minorVersion;
+			WORD buildNumber;
+			WORD revisionNumber;
+			DWORD flags;
+			DWORD publicKeyOrToken;
+			DWORD name;
+			DWORD culture;
+			DWORD hashValue;
+
+		} AssemblyRefEntry;
+
+		typedef struct AssemblyRefProcessorEntry
+		{
+			DWORD processor;
+			DWORD assemblyRef;
+		} AssemblyRefProcessorEntry;
+
+		typedef struct AssemblyRefOSEntry
+		{
+			DWORD OSPlatformId;
+			DWORD OSMajorVersion;
+			DWORD OSMinorVersion;
+			DWORD assemblyRef;
+		} AssemblyRefOSEntry;
+
+		typedef struct FileEntry
+		{
+			DWORD flags;
+			DWORD name;
+			DWORD hashValue;
+		} FileEntry;
+
+		typedef struct ExportedTypeEntry
+		{
+			DWORD flags;
+			DWORD typeDefId;
+			DWORD typeName;
+			DWORD typeNamespace;
+			DWORD implementation;
+		} ExportedTypeEntry;
+
+		typedef struct ManifestResourceEntry
+		{
+			DWORD offset;
+			DWORD flags;
+			DWORD name;
+			DWORD implementation;
+		} ManifestResourceEntry;
+
+		typedef struct NestedClassEntry
+		{
+			DWORD nestedClass;
+			DWORD enclosingClass;
+		} NestedClassEntry;
+
+		typedef struct GenericParamEntry
+		{
+			WORD number;
+			WORD flags;
+			DWORD owner;
+			DWORD name;
+		} GenericParamEntry;
+
+		typedef struct MethodSpecEntry
+		{
+			DWORD method;
+			DWORD instantiation;
+		} MethodSpecEntry;
+
+		typedef struct GenericParamConstraintEntry
+		{
+			DWORD owner;
+			DWORD constraint;
+		} GenericParamConstraintEntry;
 
 		// metadata tables ----------------------------------------------------------------
 		// base class 
@@ -390,21 +517,117 @@ namespace dotnet
 			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
 		};
 
-		class TypeSpec : public BaseTable {};
-		class ImplMap : public BaseTable {};
-		class FieldRVA : public BaseTable {};
-		class Assembly : public BaseTable {};
-		class AssemblyProcessor : public BaseTable {};
-		class AssemblyOS : public BaseTable {};
-		class AssemblyRef : public BaseTable {};
-		class AssemblyRefProcessor : public BaseTable {};
-		class AssemblyRefOS : public BaseTable {};
-		class File : public BaseTable {};
-		class ExportedType : public BaseTable {};
-		class ManifestResource : public BaseTable {};
-		class NestedClass : public BaseTable {};
-		class GenericParam : public BaseTable {};
-		class GenericParamConstraint : public BaseTable {};
+		class TypeSpec : public BaseTable
+		{
+		public:
+			std::vector<TypeSpecEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class ImplMap : public BaseTable
+		{
+		public:
+			std::vector<ImplMapEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class FieldRVA : public BaseTable
+		{
+		public:
+			std::vector<FieldRVAEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class Assembly : public BaseTable
+		{
+		public:
+			std::vector<AssemblyEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class AssemblyProcessor : public BaseTable
+		{
+		public:
+			std::vector<AssemblyProcessorEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class AssemblyOS : public BaseTable
+		{
+		public:
+			std::vector<AssemblyOSEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class AssemblyRef : public BaseTable
+		{
+		public:
+			std::vector<AssemblyRefEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class AssemblyRefProcessor : public BaseTable
+		{
+		public:
+			std::vector<AssemblyRefProcessorEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class AssemblyRefOS : public BaseTable
+		{
+		public:
+			std::vector<AssemblyRefOSEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class File : public BaseTable
+		{
+		public:
+			std::vector<FileEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class ExportedType : public BaseTable
+		{
+		public:
+			std::vector<ExportedTypeEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class ManifestResource : public BaseTable
+		{
+		public:
+			std::vector<ManifestResourceEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class NestedClass : public BaseTable
+		{
+		public:
+			std::vector<NestedClassEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class GenericParam : public BaseTable
+		{
+		public:
+			std::vector<GenericParamEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class MethodSpec : public BaseTable
+		{
+		public:
+			std::vector<MethodSpecEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
+
+		class GenericParamConstraint : public BaseTable
+		{
+		public:
+			std::vector<GenericParamConstraintEntry> entries;
+			void ReadData(BYTE** pTableAddress, IndexSizes sizes);
+		};
 
 		IndexSizes GetIndexSizes(DWORD tableRows[64], BYTE heapOffsetSizes);
 	}

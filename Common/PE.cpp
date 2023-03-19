@@ -616,6 +616,11 @@ void PE::ParseMetadataTablesStream()
                 table = new dotnet::metadatatables::GenericParam();
                 break;
             }
+            case dotnet::metadatatables::TablesEnum::MethodSpec:
+            {
+                table = new dotnet::metadatatables::MethodSpec();
+                break;
+            }
             case dotnet::metadatatables::TablesEnum::GenericParamConstraint:
             {
                 table = new dotnet::metadatatables::GenericParamConstraint();
