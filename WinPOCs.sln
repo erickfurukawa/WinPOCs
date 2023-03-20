@@ -8,6 +8,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{B4A11FC8-CD05-4A70-B93D-313E0F12DC81}"
 	ProjectSection(SolutionItems) = preProject
 		Common\Constants.h = Common\Constants.h
+		Common\Dotnet.h = Common\Dotnet.h
+		Common\MetadataTables.cpp = Common\MetadataTables.cpp
+		Common\MetadataTables.h = Common\MetadataTables.h
 		Common\PE.cpp = Common\PE.cpp
 		Common\PE.h = Common\PE.h
 		Common\Process.cpp = Common\Process.cpp
