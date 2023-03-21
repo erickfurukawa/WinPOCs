@@ -31,6 +31,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TrampolineHook", "Trampolin
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProxyDllGenerator", "ProxyDllGenerator\ProxyDllGenerator.vcxproj", "{90213374-A367-4895-964E-733D936EF886}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DotnetParser", "DotnetParser\DotnetParser.vcxproj", "{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -95,6 +97,14 @@ Global
 		{90213374-A367-4895-964E-733D936EF886}.Release|x64.Build.0 = Release|x64
 		{90213374-A367-4895-964E-733D936EF886}.Release|x86.ActiveCfg = Release|Win32
 		{90213374-A367-4895-964E-733D936EF886}.Release|x86.Build.0 = Release|Win32
+		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Debug|x64.ActiveCfg = Debug|x64
+		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Debug|x64.Build.0 = Debug|x64
+		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Debug|x86.ActiveCfg = Debug|Win32
+		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Debug|x86.Build.0 = Debug|Win32
+		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Release|x64.ActiveCfg = Release|x64
+		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Release|x64.Build.0 = Release|x64
+		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Release|x86.ActiveCfg = Release|Win32
+		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

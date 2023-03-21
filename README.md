@@ -8,4 +8,5 @@ A collection of POCs for Windows to serve as a reference for other projects and 
 - [IATHook](IATHook): One of the simplest ways of hooking functions. It works by overwriting the function pointer in the IAT with the address of the hook function. Since it changes the IAT, the hook doesn't work for local functions, and it is only applied to a single module.
 - [TrampolineHook](TrampolineHook): A technique used to hook functions by overwriting the first few instructions with a jump to the hook function. It is more powerful than the IAT hook since it can hook any function and affect all modules. My current implementation is not handling RIP relative instructions, and will likely crash if the original function is called.
 - [ProxyDllGenerator](ProxyDllGenerator): Generates files to build a proxy DLL. Can be used to hook functions.
+- [DotnetParser](DotnetParser): Given a .NET binary, outputs a json with some .NET metadata.
 - [CLRDetection](CLRDetection): Detects installed CLR versions in the machine or CLR versions running in a target process.
