@@ -18,7 +18,7 @@ int main(int argc, char** argv)
     char filePath[MAX_PATH + 1];
     if (argc == 2)
     {
-        strncpy_s(filePath, argv[2], MAX_PATH + 1);
+        strncpy_s(filePath, argv[1], MAX_PATH + 1);
     }
     else
     {
