@@ -76,7 +76,7 @@ int main(int argc, char** argv)
     jsonStr += "\t],\n\n";
 
     // AssemblyRef  table -------------------------
-    jsonStr += "\t\"AssemblyRef \": [ \n";
+    jsonStr += "\t\"AssemblyRef\": [ \n";
 
     dotnet::metadatatables::AssemblyRef* assemblyRefTable= (dotnet::metadatatables::AssemblyRef*)metadata.metadataTablesStream.tables[dotnet::metadatatables::TablesEnum::AssemblyRef];
     for (dotnet::metadatatables::AssemblyRefEntry &entry : assemblyRefTable->entries)
