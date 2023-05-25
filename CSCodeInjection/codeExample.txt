@@ -1,0 +1,10 @@
+using System;
+
+public class InjectionClass
+{
+	public static int Main ()
+	{
+		Console.WriteLine("Hello from injected code!");
+		return 0;
+	}
+}
