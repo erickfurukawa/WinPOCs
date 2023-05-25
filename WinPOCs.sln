@@ -33,6 +33,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProxyDllGenerator", "ProxyD
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DotnetParser", "DotnetParser\DotnetParser.vcxproj", "{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DotnetDllLoader", "DotnetDllInjection\DotnetDllLoader\DotnetDllLoader.vcxproj", "{489D7A0E-FB93-4265-84EB-F7FC09A23007}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DotnetDllInjection", "DotnetDllInjection\DotnetDllInjection\DotnetDllInjection.vcxproj", "{22B40907-315E-49A3-BC54-C7A558D34851}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -105,6 +109,22 @@ Global
 		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Release|x64.Build.0 = Release|x64
 		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Release|x86.ActiveCfg = Release|Win32
 		{8D499E4F-D1C0-4078-A02E-9D64A4A60AE1}.Release|x86.Build.0 = Release|Win32
+		{489D7A0E-FB93-4265-84EB-F7FC09A23007}.Debug|x64.ActiveCfg = Debug|x64
+		{489D7A0E-FB93-4265-84EB-F7FC09A23007}.Debug|x64.Build.0 = Debug|x64
+		{489D7A0E-FB93-4265-84EB-F7FC09A23007}.Debug|x86.ActiveCfg = Debug|Win32
+		{489D7A0E-FB93-4265-84EB-F7FC09A23007}.Debug|x86.Build.0 = Debug|Win32
+		{489D7A0E-FB93-4265-84EB-F7FC09A23007}.Release|x64.ActiveCfg = Release|x64
+		{489D7A0E-FB93-4265-84EB-F7FC09A23007}.Release|x64.Build.0 = Release|x64
+		{489D7A0E-FB93-4265-84EB-F7FC09A23007}.Release|x86.ActiveCfg = Release|Win32
+		{489D7A0E-FB93-4265-84EB-F7FC09A23007}.Release|x86.Build.0 = Release|Win32
+		{22B40907-315E-49A3-BC54-C7A558D34851}.Debug|x64.ActiveCfg = Debug|x64
+		{22B40907-315E-49A3-BC54-C7A558D34851}.Debug|x64.Build.0 = Debug|x64
+		{22B40907-315E-49A3-BC54-C7A558D34851}.Debug|x86.ActiveCfg = Debug|Win32
+		{22B40907-315E-49A3-BC54-C7A558D34851}.Debug|x86.Build.0 = Debug|Win32
+		{22B40907-315E-49A3-BC54-C7A558D34851}.Release|x64.ActiveCfg = Release|x64
+		{22B40907-315E-49A3-BC54-C7A558D34851}.Release|x64.Build.0 = Release|x64
+		{22B40907-315E-49A3-BC54-C7A558D34851}.Release|x86.ActiveCfg = Release|Win32
+		{22B40907-315E-49A3-BC54-C7A558D34851}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
