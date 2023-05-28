@@ -10,3 +10,9 @@ A collection of POCs for Windows to serve as a reference for other projects and 
 - [ProxyDllGenerator](ProxyDllGenerator): Generates files to build a proxy DLL. Can be used to hook functions.
 - [DotnetParser](DotnetParser): Given a .NET binary, outputs a json with some .NET metadata.
 - [CLRDetection](CLRDetection): Detects installed CLR versions in the machine or CLR versions running in a target process.
+- DotnetDllInjection:
+	- [DotnetDllInjection](DotnetDllInjection/DotnetDllInjection): Injects a managed DLL into a process. Needs to be used with the `DotnetDllLoader` DLL.
+	- [DotnetDllLoader](DotnetDllInjection/DotnetDllLoader): A native DLL used as a helper to inject a managed DLL in a process. It loads the .NET runtime, loads the managed DLL, and runs a method from it.
+- CSCodeInjection:
+	- [CSCodeInjectionServer](CSCodeInjection/CSCodeInjectionServer): A DLL to be injected into a process to run C# code. It receives the code via sockets listening on localhost, compiles the code, and executes it.
+	- [CSCodeInjectionClient](CSCodeInjection/CSCodeInjectionClient): A simple client that sends the contents of a file via sockets. Meant to be used to send C# code to `CSCodeInjectionServer`.
