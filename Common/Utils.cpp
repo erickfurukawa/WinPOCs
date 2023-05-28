@@ -26,6 +26,13 @@ bool FileExists(char* fileName)
     return true;
 }
 
+size_t ToWideString(const char* mbstr, wchar_t* wstr, size_t max)
+{
+    size_t convertedSize;
+    mbstowcs_s(&convertedSize, wstr, max, mbstr, max);
+    return convertedSize;
+}
+
 BYTE* ScanPattern(BYTE* pattern, char* mask, BYTE* src, uintptr_t srcSize)
 {
     uintptr_t patternLen = strnlen(mask, srcSize);

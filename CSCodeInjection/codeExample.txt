@@ -1,0 +1,33 @@
+using System;
+using System.Reflection;
+
+public class InjectionClass 
+{ 
+	private static Type FindType(string fullName)
+	{
+		Type t = null;
+		Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+		for (int i = 0; i < assemblies.Length; i++)
+		{
+			t = assemblies[i].GetType(fullName);
+			if (t != null)
+				return t;
+		}
+		return null;
+	}
+
+	public static int Main() 
+	{
+		Console.WriteLine("Hello from injected code!");
+
+		// creating an object and running a method
+		Type objType = FindType("MyNamespace.MyClass");
+		object objInstance = Activator.CreateInstance(objType);
+		MethodInfo methodInfo = objType.GetMethod("MyMethod");
+
+		object[] args = {"MyArgs"};
+		methodInfo.Invoke(objInstance, args);
+
+		return 0;
+	}
+}
