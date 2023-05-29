@@ -126,19 +126,36 @@ int main(int argc, char** argv)
         CloseHandle(hThread);
         std::cout << "Loader dll has probably been injected successfully!\n\n";
 
-        // get address of the Inject method
-        std::cout << "Finding addresses of Inject method...\n";
+        // get address of StartTheDotNetRuntime method -------------
+        std::cout << "Finding address of StartTheDotNetRuntime method...\n";
         MODULEENTRY32 meLoader = proc->GetModule(loaderDll->fileName);
+        DWORD startRuntimeRVA = loaderDll->GetExportRVA("StartTheDotNetRuntime");
+        void* startRuntimeAddr = meLoader.modBaseAddr + startRuntimeRVA;
+        std::cout << "StartTheDotNetRuntime method at: 0x" << std::hex << (uintptr_t)startRuntimeAddr << "\n";
+
+        // run StartTheDotNetRuntime method
+        std::cout << "Running StartTheDotNetRuntime method...\n\n";
+        hThread = CreateRemoteThread(proc->handle, nullptr, 0, (LPTHREAD_START_ROUTINE)startRuntimeAddr, 0, 0, nullptr);
+        if (!hThread)
+        {
+            std::cerr << "Could not run StartTheDotNetRuntime method\n";
+            goto cleanup;
+        }
+        WaitForSingleObject(hThread, 3000);
+        CloseHandle(hThread);
+
+        // get address of RunMethod method -------------
+        std::cout << "Finding address of RunMethod method...\n";
         DWORD injectRVA = loaderDll->GetExportRVA("RunMethod");
         void* injectAddr = meLoader.modBaseAddr + injectRVA;
-        std::cout << "Inject method at: 0x" << std::hex << (uintptr_t)injectAddr << "\n\n";
+        std::cout << "RunMethod method at: 0x" << std::hex << (uintptr_t)injectAddr << "\n";
 
         // run Inject method
-        std::cout << "Running inject method...\n";
+        std::cout << "Running RunMethod method...\n\n";
         hThread = CreateRemoteThread(proc->handle, nullptr, 0, (LPTHREAD_START_ROUTINE)injectAddr, argsAddress, 0, nullptr);
         if (!hThread)
         {
-            std::cerr << "Could not inject dll into the target process\n";
+            std::cerr << "Could not run RunMethod method\n";
             goto cleanup;
         }
         WaitForSingleObject(hThread, 3000);

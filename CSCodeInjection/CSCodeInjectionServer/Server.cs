@@ -16,7 +16,6 @@ namespace CSCodeInjection
             StartServer("7777:secret");
         }
 
-        //public static void StartServer(int port, string secret)
         static int StartServer(string args)
         {
             string[] argsList = args.Split(':');

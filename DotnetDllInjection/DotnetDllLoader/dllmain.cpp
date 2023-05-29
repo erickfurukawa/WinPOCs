@@ -4,8 +4,6 @@
 #include <metahost.h>
 #pragma comment(lib, "mscoree.lib")
 
-void StartTheDotNetRuntime();
-
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -14,8 +12,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
-        StartTheDotNetRuntime();
-        break;
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
@@ -26,8 +22,10 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 ICLRRuntimeHost* pClrRuntimeHost = NULL;
 
-void StartTheDotNetRuntime()
+// CLR cannot be started inside DllMain, therefore, StartTheDotNetRuntime cannot be called in DllMain.
+extern "C" __declspec(dllexport) void StartTheDotNetRuntime()
 {
+    wprintf(L"Starting .NET runtime...\n");
     HRESULT hr;
     ICLRMetaHost* pMetaHost = NULL;
     ICLRRuntimeInfo* pRuntimeInfo = NULL;
@@ -38,7 +36,7 @@ void StartTheDotNetRuntime()
     hr = pRuntimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&pClrRuntimeHost));
 
     // start runtime
-    hr = pClrRuntimeHost->Start();
+    hr = pClrRuntimeHost->Start(); // hangs if called inside DllMain
     wprintf(L".Net runtime is loaded.\n");
 }
 
@@ -55,6 +53,6 @@ extern "C" __declspec(dllexport) void RunMethod(LoaderArgs * args)
         reinterpret_cast<LPCWSTR>(args->argument),
         &dwReturn
     );
-    std::cout << "HRESULT: 0x" << std::hex << (uintptr_t)hr << std::endl;
-    std::cout << "dwReturn: 0x" << std::hex << (uintptr_t)dwReturn << std::endl;
+    std::cout << "HRESULT: 0x" << std::hex << (HRESULT)hr << std::endl;
+    std::cout << "dwReturn: 0x" << std::hex << (DWORD)dwReturn << std::endl;
 }
