@@ -272,3 +272,32 @@ MODULEENTRY32 Process::GetModule(const char* modName)
     }
     return mod32;
 }
+
+bool Process::GetProcessInformation(ProcessInformation* pbi)
+{
+    // find NtQueryInformationProcess function
+    HMODULE hNtDll = LoadLibraryA("ntdll.dll");
+    if (hNtDll == NULL)
+    {
+        std::cerr << "Could not find module ntdll.dll\n";
+        return false;
+    }
+
+    f_NtQueryInformationProcess pNtQueryInformationProcess = (f_NtQueryInformationProcess)GetProcAddress(hNtDll, "NtQueryInformationProcess");
+    if (pNtQueryInformationProcess == NULL)
+    {
+        FreeLibrary(hNtDll);
+        std::cerr << "Could not find NtQueryInformationProcess\n";
+        return false;
+    }
+
+    // call NtQueryInformationProcess to get PROCESS_BASIC_INFORMATION
+    ULONG sizeNeeded;
+    NTSTATUS dwStatus = pNtQueryInformationProcess(this->handle, PROCESSINFOCLASS::ProcessBasicInformation, pbi, sizeof(ProcessInformation), &sizeNeeded);
+    if (dwStatus != 0)
+    {
+        std::cerr << "NtQueryInformationProcess failed!\n";
+        return false;
+    }
+    return true;
+}

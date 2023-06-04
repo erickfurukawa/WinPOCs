@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <tlhelp32.h>
+#include "WinInternals.h"
 
 class Process
 {
@@ -20,6 +21,7 @@ public:
 
     bool Open(DWORD access = PROCESS_ALL_ACCESS);
     void Close();
+    bool GetProcessInformation(ProcessInformation* pbi);
 
     LPVOID AllocMemory(SIZE_T size, LPVOID address = nullptr, DWORD flProtect = PAGE_EXECUTE_READWRITE);
     // alloc memory within a range
