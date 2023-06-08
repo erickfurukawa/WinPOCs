@@ -1,6 +1,7 @@
 # IATHook
 
 IAT hook is a technique used to intercept external function calls made from a module (`.dll` or `.exe` file loaded in a process). It involves overwriting the entries in the Import Address Table (IAT), which contains pointers to external functions used by the module. By changing the addresses in the IAT, the hook can redirect function calls to different addresses, allowing for custom code to be executed instead of the original function.
+
 Despite being relatively easy to do, an IAT hook can only be applied to functions located in the IAT. Local functions and dynamically loaded functions cannot be intercepted by this method.
 
 ## How it works
