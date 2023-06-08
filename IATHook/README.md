@@ -6,7 +6,7 @@ Despite being relatively easy to do, an IAT hook can only be applied to function
 
 ## How it works
 This project only hooks in the IAT of the main module. Here is how it is done:
-- Inject a DLL with the hook function in the target process (see [DllInjection](DllInjection))
+- Inject a DLL with the hook function in the target process (see [DllInjection](/DllInjection))
 - Get the base address of the main module (`CreateToolhelp32Snapshot`)
 - Find the RVA of the target function IAT entry in the main module (by parsing the PE format)
 - Get the address of the hook function
