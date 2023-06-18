@@ -1,6 +1,7 @@
 # WinPOCs
 
 A collection of POCs for Windows to serve as a reference for other projects and security research.
+
 Many of the projects utilize techniques similar to those used by malware. It might be necessary to disable your antivirus to run them without any issues.
 
 - [DllInjection](DllInjection): The classic way to inject a DLL into a running process. It writes the DLL path in the target process' memory and starts a remote thread to call `LoadLibraryA`.
@@ -17,3 +18,4 @@ Many of the projects utilize techniques similar to those used by malware. It mig
 - CSCodeInjection:
 	- [CSCodeInjectionServer](CSCodeInjection/CSCodeInjectionServer): A DLL to be injected into a process to run C# code. It receives the code via sockets listening on localhost, compiles the code, and executes it.
 	- [CSCodeInjectionClient](CSCodeInjection/CSCodeInjectionClient): A simple client that sends the contents of a file via sockets. Meant to be used to send C# code to `CSCodeInjectionServer`.
+- [DotnetHook](DotnetHook): Helper classes to aid in function hooking and reflection in .NET. To hook a function in an external process, create a DLL using the helper classes and inject it with `DotnetDllInjection`.
