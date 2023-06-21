@@ -127,11 +127,11 @@ int main(int argc, char** argv)
         std::cout << "Loader dll has probably been injected successfully!\n\n";
 
         // get address of StartTheDotNetRuntime method -------------
-        std::cout << "Finding address of StartTheDotNetRuntime method...\n";
+        std::cout << "Finding address of StartDotnetRuntime method...\n";
         MODULEENTRY32 meLoader = proc->GetModule(loaderDll->fileName);
-        DWORD startRuntimeRVA = loaderDll->GetExportRVA("StartTheDotNetRuntime");
+        DWORD startRuntimeRVA = loaderDll->GetExportRVA("StartDotnetRuntime");
         void* startRuntimeAddr = meLoader.modBaseAddr + startRuntimeRVA;
-        std::cout << "StartTheDotNetRuntime method at: 0x" << std::hex << (uintptr_t)startRuntimeAddr << "\n";
+        std::cout << "StartDotnetRuntime method at: 0x" << std::hex << (uintptr_t)startRuntimeAddr << "\n";
 
         // run StartTheDotNetRuntime method
         std::cout << "Running StartTheDotNetRuntime method...\n\n";

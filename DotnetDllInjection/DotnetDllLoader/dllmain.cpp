@@ -22,8 +22,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 
 ICLRRuntimeHost* pClrRuntimeHost = NULL;
 
-// CLR cannot be started inside DllMain, therefore, StartTheDotNetRuntime cannot be called in DllMain.
-extern "C" __declspec(dllexport) void StartTheDotNetRuntime()
+// Since DllMain runs while the Loader Lock is held, the CLR cannot be started inside DllMain.
+extern "C" __declspec(dllexport) void StartDotnetRuntime()
 {
     wprintf(L"Starting .NET runtime...\n");
     HRESULT hr;
