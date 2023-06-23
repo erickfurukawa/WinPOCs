@@ -68,6 +68,117 @@ void Process::Close()
     }
 }
 
+bool Process::GetThreadIDs(std::vector<DWORD> &threadIDs)
+{
+    HANDLE hThreadSnap;
+    THREADENTRY32 te32{};
+
+    // creates thread snapshot
+    hThreadSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (hThreadSnap == INVALID_HANDLE_VALUE)
+    {
+        std::cerr << "CreateToolhelp32Snapshot error " << GetLastError() << "\n";
+        return false;
+    }
+
+    te32.dwSize = sizeof(THREADENTRY32);
+    if (!Thread32First(hThreadSnap, &te32))
+    {
+        std::cerr << "Process32First error " << GetLastError() << "\n";
+        CloseHandle(hThreadSnap);
+        return false;
+    }
+
+    do // loops through threads
+    {
+        if (this->pid == te32.th32OwnerProcessID)
+        {
+            threadIDs.push_back(te32.th32ThreadID);
+        }
+    } while (Thread32Next(hThreadSnap, &te32));
+
+    CloseHandle(hThreadSnap);
+    return true;
+}
+
+bool Process::Suspend()
+{
+    std::vector<DWORD> threadIDs{};
+    bool success = true;
+    
+    if (this->GetThreadIDs(threadIDs))
+    {
+        for (DWORD threadID : threadIDs)
+        {
+            HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, false, threadID);
+            if (!hThread)
+            {
+                success = false;
+                std::cerr << "OpenThread error " << GetLastError() << "\n";
+                break;
+            }
+            if (SuspendThread(hThread) == -1)
+            {
+                success = false;
+                std::cerr << "SuspendThread error " << GetLastError() << "\n";
+                CloseHandle(hThread);
+                break;
+            }
+            CloseHandle(hThread);
+        }
+    }
+    else
+    {
+        success = false;
+        std::cerr << "Could not get thread IDs\n";
+    }
+
+    if (!success)
+    {
+        std::cerr << "Could not suspend process\n";
+    }
+    return success;
+}
+
+bool Process::Resume()
+{
+    std::vector<DWORD> threadIDs{};
+    bool success = true;
+
+    if (this->GetThreadIDs(threadIDs))
+    {
+        for (DWORD threadID : threadIDs)
+        {
+            HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, false, threadID);
+            if (!hThread)
+            {
+                success = false;
+                std::cerr << "OpenThread error " << GetLastError() << "\n";
+                break;
+            }
+            if (ResumeThread(hThread) == -1)
+            {
+                success = false;
+                std::cerr << "ResumeThread error " << GetLastError() << "\n";
+                CloseHandle(hThread);
+                break;
+            }
+            CloseHandle(hThread);
+        }
+    }
+    else
+    {
+        success = false;
+        std::cerr << "Could not get thread IDs\n";
+    }
+
+    if (!success)
+    {
+        std::cerr << "Could not resume process\n";
+    }
+    return success;
+}
+
 LPVOID Process::AllocMemory(SIZE_T size, LPVOID address, DWORD flProtect)
 {
     LPVOID addr = VirtualAllocEx(this->handle, address, size, MEM_COMMIT | MEM_RESERVE, flProtect);

@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <tlhelp32.h>
+#include <vector>
 #include "WinInternals.h"
 
 class Process
@@ -21,8 +22,10 @@ public:
 
     bool Open(DWORD access = PROCESS_ALL_ACCESS);
     void Close();
+    bool Suspend();
+    bool Resume();
+    bool GetThreadIDs(std::vector<DWORD>& threadIDs);
     bool GetProcessInformation(ProcessInformation* pbi);
-
     LPVOID AllocMemory(SIZE_T size, LPVOID address = nullptr, DWORD flProtect = PAGE_EXECUTE_READWRITE);
     // alloc memory within a range
     LPVOID AllocMemory(SIZE_T size, LPVOID begin, LPVOID end, DWORD flProtect = PAGE_EXECUTE_READWRITE);
