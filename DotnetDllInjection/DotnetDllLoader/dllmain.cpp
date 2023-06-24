@@ -40,7 +40,9 @@ extern "C" __declspec(dllexport) void StartDotnetRuntime()
     wprintf(L".Net runtime is loaded.\n");
 }
 
-// Loads a dotnet binary and runs a method
+// Loads a .NET binary and runs a method.
+// The target method must have the following signature:
+// public static int methodName (String args)
 extern "C" __declspec(dllexport) void RunMethod(LoaderArgs * args)
 {
     HRESULT hr;
