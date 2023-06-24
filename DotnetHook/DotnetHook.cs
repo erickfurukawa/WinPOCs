@@ -41,7 +41,17 @@ namespace DotnetHook
             {
                 bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             }
-            Type objType = obj.GetType();
+
+            Type objType = null;
+            if (obj is Type) // get from class static field
+            {
+                objType = (Type)obj;
+                obj = null;
+            }
+            else // get from object instance
+            {
+                objType = obj.GetType();
+            }
 
             // try to find field to get
             FieldInfo field;
@@ -69,7 +79,18 @@ namespace DotnetHook
             {
                 bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
             }
-            Type objType = obj.GetType();
+
+            Type objType = null;
+            if (obj is Type) // set to class static field
+            {
+                objType = (Type)obj;
+                obj = null;
+            }
+            else // set to object instance
+            {
+                objType = obj.GetType();
+            }
+
             Type valueType = value.GetType();
 
             // try to find field to set
