@@ -129,6 +129,13 @@ namespace DotnetHook
         {
             string logTag = "GetType";
             Type t = null;
+
+            // try to find in current assembly first
+            t = Assembly.GetExecutingAssembly().GetType(fullName);
+            if (t != null)
+                return t;
+
+            // look in all other assemblies
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
             for (int i = 0; i < assemblies.Length; i++)
             {
