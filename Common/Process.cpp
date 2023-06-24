@@ -4,41 +4,32 @@
 
 Process::Process(const char* procName)
 {
-    HANDLE hProcessSnap;
     PROCESSENTRY32 pe32;
-    DWORD pid = 0;
-
-    // creates process snapshot
-    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hProcessSnap == INVALID_HANDLE_VALUE)
+    if (Process::GetProccessEntry(procName, 0, &pe32))
     {
-        ThrowException("CreateToolhelp32Snapshot error");
+        this->pid = pe32.th32ProcessID;
+        this->name = std::string(pe32.szExeFile);
+        this->mainModule = this->GetModule(pe32.szExeFile);
     }
-
-    pe32.dwSize = sizeof(PROCESSENTRY32);
-    if (!Process32First(hProcessSnap, &pe32))
-    {
-        ThrowException("Process32First error");
-    }
-
-    do // loops through processes
-    {
-        if (_strcmpi(procName, pe32.szExeFile) == 0)
-        {
-            pid = pe32.th32ProcessID;
-            break;
-        }
-    } while (Process32Next(hProcessSnap, &pe32));
-
-    CloseHandle(hProcessSnap);
-    if (!pid) 
+    else
     {
         ThrowException(std::string("Could not find process: ") + procName);
     }
+}
 
-    this->pid = pid;
-
-    this->mainModule = this->GetModule(procName);
+Process::Process(DWORD pid)
+{
+    PROCESSENTRY32 pe32;
+    if (Process::GetProccessEntry(nullptr, pid, &pe32))
+    {
+        this->pid = pe32.th32ProcessID;
+        this->name = std::string(pe32.szExeFile);
+        this->mainModule = this->GetModule(pe32.szExeFile);
+    }
+    else
+    {
+        ThrowException(std::string("Could not find process with PID: ") + std::to_string(pid));
+    }
 }
 
 Process::~Process()
@@ -411,4 +402,55 @@ bool Process::GetProcessInformation(ProcessInformation* pbi)
         return false;
     }
     return true;
+}
+
+bool Process::GetProccessEntry(const char* procName, DWORD pid, PROCESSENTRY32* procEntry)
+{
+    bool success = false;
+    bool byName = (procName != nullptr);
+
+    HANDLE hProcessSnap;
+    PROCESSENTRY32 pe32{};
+
+    // creates process snapshot
+    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hProcessSnap != INVALID_HANDLE_VALUE)
+    {
+        pe32.dwSize = sizeof(PROCESSENTRY32);
+        if (Process32First(hProcessSnap, &pe32))
+        {
+            do // loops through processes
+            {
+                if (byName)
+                {
+                    if (_strcmpi(procName, pe32.szExeFile) == 0)
+                    {
+                        *procEntry = pe32;
+                        success = true;
+                        break;
+                    }
+                }
+                else // by pid
+                {
+                    if (pid == pe32.th32ProcessID)
+                    {
+                        *procEntry = pe32;
+                        success = true;
+                        break;
+                    }
+                }
+            } while (Process32Next(hProcessSnap, &pe32));
+        }
+        else
+        {
+            std::cerr << "Process32First error: " << GetLastError() << "\n";
+        }
+        CloseHandle(hProcessSnap);
+    }
+    else
+    {
+        std::cerr << "CreateToolhelp32Snapshot error: " << GetLastError() << "\n";
+    }
+
+    return success;
 }
