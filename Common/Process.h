@@ -14,10 +14,10 @@ private:
 
 public:
     DWORD pid = 0;
-    std::string name;
+    std::string name = std::string();
     HANDLE handle = nullptr;
-    MODULEENTRY32 mainModule; // TODO: remove? since it is a "snapshot" struct
-    bool is32Bits;
+    MODULEENTRY32 mainModule = MODULEENTRY32(); // TODO: remove? since it is a "snapshot" struct
+    bool is32Bits = false;
 
     Process(const char* procName);
     Process(DWORD pid);

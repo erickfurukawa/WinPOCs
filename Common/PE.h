@@ -47,15 +47,15 @@ public:
     // TODO: ordinal GetImportRVA
     // DWORD GetImportRVA(char* moduleName, DWORD ordinal);
 
-    dotnet::Metadata dotnetMetadata;
-    bool is32Bits;
-    bool isDotNet;
-    char filePath[MAX_PATH+1];
-    char fileName[MAX_LENGTH+1];
+    dotnet::Metadata dotnetMetadata = dotnet::Metadata();
+    bool is32Bits = false;
+    bool isDotNet = false;
+    char filePath[MAX_PATH+1] = { 0 };
+    char fileName[MAX_LENGTH+1] = { 0 };
 
     BYTE* buffer = nullptr;
     size_t fileSize = 0;
 
-    PEHeaders headers;
-    PIMAGE_DATA_DIRECTORY pDataDirectory;
+    PEHeaders headers = PEHeaders();
+    PIMAGE_DATA_DIRECTORY pDataDirectory = nullptr;
 };
