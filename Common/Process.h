@@ -20,7 +20,7 @@ public:
     bool is32Bits;
 
     Process(const char* procName);
-    Process(DWORD pid);
+    Process(DWORD pid = 0);
     ~Process();
 
     bool Open(DWORD access = PROCESS_ALL_ACCESS);
