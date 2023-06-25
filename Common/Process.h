@@ -9,8 +9,7 @@
 class Process
 {
 private:
-    Process(const Process&);
-    Process& operator=(const Process&); //TODO
+    static bool Copy(const Process& from, Process& to);
 
 public:
     DWORD pid = 0;
@@ -21,6 +20,8 @@ public:
 
     Process(const char* procName);
     Process(DWORD pid);
+    Process(const Process& process);
+    Process& operator=(const Process& process);
     ~Process();
 
     bool Open(DWORD access = PROCESS_ALL_ACCESS);

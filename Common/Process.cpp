@@ -32,9 +32,56 @@ Process::Process(DWORD pid)
     }
 }
 
+bool Process::Copy(const Process& from, Process& to)
+{
+    if (to.handle != nullptr)
+    {
+        CloseHandle(to.handle);
+    }
+
+    to.pid = from.pid;
+    to.name = from.name;
+    to.mainModule = from.mainModule;
+    to.is32Bits = from.is32Bits;
+
+    if (from.handle != nullptr)
+    {
+        HANDLE currentProcess = GetCurrentProcess();
+        if (!DuplicateHandle(currentProcess, from.handle, currentProcess, &to.handle, 0, FALSE, DUPLICATE_SAME_ACCESS))
+        {
+            std::cerr << "DuplicateHandle error: " << GetLastError() << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
+// copy constructor
+Process::Process(const Process& process)
+{
+    if (!Process::Copy(process, *this))
+    {
+        ThrowException(std::string("Could not create copy of Process"));
+    }
+}
+
+Process& Process::operator=(const Process& process)
+{
+    if (!Process::Copy(process, *this))
+    {
+        ThrowException(std::string("Could not assign copy of Process"));
+    }
+
+    return *this;
+}
+
 Process::~Process()
 {
-
+    if (this->handle)
+    {
+        CloseHandle(this->handle);
+        this->handle = nullptr;
+    }
 }
 
 bool Process::Open(DWORD access)
@@ -54,7 +101,7 @@ void Process::Close()
 {
     if (this->handle) 
     {
-        CloseHandle(handle);
+        CloseHandle(this->handle);
         this->handle = nullptr;
     }
 }
