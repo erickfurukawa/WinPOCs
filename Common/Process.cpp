@@ -19,11 +19,6 @@ Process::Process(const char* procName)
 
 Process::Process(DWORD pid)
 {
-    if (pid == 0)
-    {
-        pid = GetCurrentProcessId();
-    }
-
     PROCESSENTRY32 pe32;
     if (Process::GetProccessEntry(nullptr, pid, &pe32))
     {
