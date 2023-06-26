@@ -151,18 +151,26 @@ namespace DotnetHook
         {
             string logTag = "GetMethod";
             MethodInfo method = null;
-            if (bindingFlags != BindingFlags.Default)
-            {
-                method = type.GetMethod(methodName, bindingFlags);
+
+            try
+            {     
+                if (bindingFlags != BindingFlags.Default)
+                {
+                    method = type.GetMethod(methodName, bindingFlags);
+                }
+                else
+                {
+                    method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+                }
             }
-            else
+            catch (AmbiguousMatchException)
             {
-                method = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+                Logger.Log(logTag, String.Format("Multiple methods '{0}' from type '{1}' were found. Provide binding flags to narrow it down.", methodName, type.ToString()));
             }
 
             if (method == null)
             {
-                Logger.Log(logTag, String.Format("{0} Could not find method '{0}' in object of type '{1}'", methodName, type.ToString()));
+                Logger.Log(logTag, String.Format("Could not find method '{0}' in object of type '{1}'", methodName, type.ToString()));
             }
             return method;
         }
