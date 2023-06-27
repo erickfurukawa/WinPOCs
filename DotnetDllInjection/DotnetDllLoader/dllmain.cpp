@@ -57,4 +57,5 @@ extern "C" __declspec(dllexport) void RunMethod(LoaderArgs * args)
     );
     std::cout << "HRESULT: 0x" << std::hex << (HRESULT)hr << std::endl;
     std::cout << "dwReturn: 0x" << std::hex << (DWORD)dwReturn << std::endl;
+    // https://referencesource.microsoft.com/#mscorlib/system/__hresults.cs
 }

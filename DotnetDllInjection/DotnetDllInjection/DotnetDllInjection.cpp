@@ -126,19 +126,19 @@ int main(int argc, char** argv)
         CloseHandle(hThread);
         std::cout << "Loader dll has probably been injected successfully!\n\n";
 
-        // get address of StartTheDotNetRuntime method -------------
+        // get address of StartDotNetRuntime method -------------
         std::cout << "Finding address of StartDotnetRuntime method...\n";
         MODULEENTRY32 meLoader = proc->GetModule(loaderDll->fileName);
         DWORD startRuntimeRVA = loaderDll->GetExportRVA("StartDotnetRuntime");
         void* startRuntimeAddr = meLoader.modBaseAddr + startRuntimeRVA;
         std::cout << "StartDotnetRuntime method at: 0x" << std::hex << (uintptr_t)startRuntimeAddr << "\n";
 
-        // run StartTheDotNetRuntime method
-        std::cout << "Running StartTheDotNetRuntime method...\n\n";
+        // run StartDotNetRuntime method
+        std::cout << "Running StartDotNetRuntime method...\n\n";
         hThread = CreateRemoteThread(proc->handle, nullptr, 0, (LPTHREAD_START_ROUTINE)startRuntimeAddr, 0, 0, nullptr);
         if (!hThread)
         {
-            std::cerr << "Could not run StartTheDotNetRuntime method\n";
+            std::cerr << "Could not run StartDotNetRuntime method\n";
             goto cleanup;
         }
         WaitForSingleObject(hThread, 3000);
