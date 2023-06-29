@@ -6,6 +6,7 @@ using Microsoft.CSharp;
 using System.CodeDom.Compiler;
 using System.IO;
 using System.Reflection;
+using System.Linq;
 
 namespace CSCodeInjection
 {
@@ -118,6 +119,12 @@ namespace CSCodeInjection
             {
                 // Set up the compiler parameters
                 var compilerParams = new CompilerParameters();
+                var assemblies = AppDomain.CurrentDomain
+                            .GetAssemblies()
+                            .Where(a => !a.IsDynamic)
+                            .Select(a => a.Location);
+                compilerParams.ReferencedAssemblies.AddRange(assemblies.ToArray());
+                compilerParams.CompilerOptions = "/unsafe";
                 compilerParams.GenerateInMemory = true;
 
                 // Create a new CSharpCodeProvider instance
