@@ -7,6 +7,7 @@ namespace CSCodeInjection
 {
     internal class Client
     {
+        static int bufferSize = 256 * 1024;
         static void Main(string[] args)
         {
             Console.WriteLine("Args: port secret codePath methodFullName");
@@ -44,7 +45,7 @@ namespace CSCodeInjection
         }
         static bool ReadMessage(NetworkStream stream, out string message)
         {
-            byte[] buffer = new byte[4 * 1024];
+            byte[] buffer = new byte[bufferSize];
             try
             {
                 int bytesRead = stream.Read(buffer, 0, buffer.Length);
