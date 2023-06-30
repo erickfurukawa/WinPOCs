@@ -9,10 +9,12 @@ namespace CSCodeInjection
     {
         static void Main(string[] args)
         {
+            Console.WriteLine("Args: port secret codePath methodFullName");
             string serverAddress = "127.0.0.1";
             int port = Int32.Parse(args[0]);
             string secret = args[1];
             string codePath = args[2];
+            string methodFullName = args[3];
             string serverResponse;
 
             try
@@ -25,6 +27,9 @@ namespace CSCodeInjection
                 SendMessage(stream, secret);
                 ReadMessage(stream, out serverResponse);
                 Console.WriteLine("Message from server: {0}", serverResponse);
+
+                Console.WriteLine("Sending method to call...");
+                SendMessage(stream, methodFullName);
 
                 Console.WriteLine("Sending code...");
                 string code = File.ReadAllText(codePath);

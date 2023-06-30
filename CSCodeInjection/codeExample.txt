@@ -1,33 +1,19 @@
 using System;
-using System.Reflection;
 
-public class InjectionClass 
-{ 
-	private static Type FindType(string fullName)
+/*
+DotnetDllInjection.exe dotNetFrameworkApp.exe CSCodeInjectionServer.dll CSCodeInjection.Server.StartServer 2222:secret
+
+CSCodeInjectionClient.exe 2222 secret codeExample.txt InjectionNamespace.InjectionClass.Main
+*/
+
+namespace InjectionNamespace
+{
+	public class InjectionClass
 	{
-		Type t = null;
-		Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-		for (int i = 0; i < assemblies.Length; i++)
+		public static int Main ()
 		{
-			t = assemblies[i].GetType(fullName);
-			if (t != null)
-				return t;
+			Console.WriteLine("Hello from injected code!");
+			return 0;
 		}
-		return null;
-	}
-
-	public static int Main() 
-	{
-		Console.WriteLine("Hello from injected code!");
-
-		// creating an object and running a method
-		Type objType = FindType("MyNamespace.MyClass");
-		object objInstance = Activator.CreateInstance(objType);
-		MethodInfo methodInfo = objType.GetMethod("MyMethod");
-
-		object[] args = {"MyArgs"};
-		methodInfo.Invoke(objInstance, args);
-
-		return 0;
 	}
 }

@@ -57,7 +57,8 @@ namespace CSCodeInjection
         static void HandleClient(TcpClient client, string secret)
         {
             NetworkStream stream = client.GetStream();
-            string message;
+            string code;
+            string methodName;
             string receivedSecret;
 
             if (ReadMessage(stream, out receivedSecret))
@@ -66,10 +67,11 @@ namespace CSCodeInjection
                 if (receivedSecret == secret)
                 {
                     SendMessage(stream, "Correct secret.");
-                    while (ReadMessage(stream, out message))
+                    while (ReadMessage(stream, out methodName) && ReadMessage(stream, out code))
                     {
-                        Console.WriteLine("Received: {0}", message);
-                        SendMessage(stream, RunString(message));
+                        Console.WriteLine("Received: {0}", code);
+                        Console.WriteLine("Calling: {0}", methodName);
+                        SendMessage(stream, RunString(code, methodName));
                     }
                 }
                 else
@@ -112,9 +114,12 @@ namespace CSCodeInjection
             return true;
         }
 
-        static string RunString(string code)
+        static string RunString(string code, string methodFullName)
         {
-            string returnData = "(return value)";
+            int index = methodFullName.LastIndexOf(".");
+            string typeName = methodFullName.Substring(0, index);
+            string methodName = methodFullName.Substring(index + 1, methodFullName.Length - index - 1);
+            string returnData = "";
             try
             {
                 // Set up the compiler parameters
@@ -144,20 +149,31 @@ namespace CSCodeInjection
                 }
                 else
                 {
-                    // Get the compiled assembly
+                    // Get the compiled assembly and invoke method
                     Assembly assembly = results.CompiledAssembly;
+                    object instance = assembly.CreateInstance(typeName);
+                    MethodInfo method = assembly.GetType(typeName)?.GetMethod(methodName);
 
-                    // Create an instance of the class
-                    object instance = assembly.CreateInstance("InjectionClass");
-
-                    // Invoke the method dynamically
-                    MethodInfo method = instance.GetType().GetMethod("Main");
-                    method.Invoke(instance, null);
+                    if (method != null)
+                    {
+                        returnData = method.Invoke(instance, null)?.ToString();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Could not find method " + methodFullName);
+                        returnData = "Could not find method " + methodFullName;
+                    }
                 }
             }
-            catch (Exception) { }
+            catch (Exception e) 
+            {
+                Console.WriteLine(e.Message);
+                returnData = e.Message;
+            }
 
-            return returnData;
+            if (returnData != null)
+                return returnData;
+            return "(null)";
         }
     }
 }
