@@ -26,8 +26,7 @@ typedef struct PEHeaders
 class PE
 {
 private:
-    PE(const PE&);
-    PE& operator=(const PE&);
+    static bool Copy(const PE& from, PE& to);
 
     // .NET related methods -----
     void ParseDotnetMetadata();
@@ -48,7 +47,10 @@ public:
     PIMAGE_DATA_DIRECTORY pDataDirectory = nullptr;
     dotnet::Metadata dotnetMetadata = dotnet::Metadata();
 
+    PE();
     PE(const char* fileName);
+    PE(const PE& pe);
+    PE& operator=(const PE& pe);
     ~PE();
 
     BYTE* RVAToBufferPointer(DWORD rva);
