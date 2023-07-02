@@ -1,6 +1,7 @@
 #include "ManualMapping.h"
 #include "../Common/Process.h"
 #include "../Common/Constants.h"
+#include "../Common/PE.h"
 #include <iostream>
 
 int main(int argc, char** argv)
@@ -21,24 +22,29 @@ int main(int argc, char** argv)
         std::cin.getline(dllPath, MAX_PATH+1);
     }
 
-    Process* proc = new Process(processName);
-    if (proc->Open(PROCESS_CREATE_THREAD | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION))
+    PE dll = PE(dllPath);
+    Process proc = Process(processName);
+    bool success = false;
+    if (proc.Open(PROCESS_CREATE_THREAD | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION))
     { 
         std::cout << "Manual mapping dll " << dllPath << " into process " << processName << "\n\n";
-        if (ManualMapDll(proc, dllPath))
+        if (ManualMapDll(proc, dll))
         {
             std::cout << "Dll injected successfully!\n";
+            success = true;
         }
         else
         {
             std::cerr << "Could not inject the dll in the target process.\n";
         }
-        proc->Close();
+        proc.Close();
     }
     else 
     {
         std::cerr << "Could not open target process.\n";
     }
-    delete proc;
-    return 0;
+
+    if (success)
+        return 0;
+    return 1;
 }

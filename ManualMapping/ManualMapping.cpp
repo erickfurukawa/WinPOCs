@@ -1,7 +1,6 @@
 #include "ManualMapping.h"
 #include <iostream>
 #include "../Common/Constants.h"
-#include "../Common/PE.h"
 
 namespace
 {
@@ -152,32 +151,44 @@ namespace
     }
 }
 
-// TODO: remove prints, or make a verbosity level check
-bool ManualMapDll(Process* proc, const char* dllPath)
+
+bool ManualMapDll(Process& proc, const char* dllPath)
 {
+    PE dll(dllPath);
+    return ManualMapDll(proc, dll);
+}
+
+// TODO: remove prints, or make a verbosity level check
+bool ManualMapDll(Process& proc, PE& dll)
+{
+    if (proc.is32Bits != dll.is32Bits)
+    {
+        std::cerr << "Process and dll bitness are different!\n";
+        return false;
+    }
+
     bool success = false;
 
     BYTE* baseAddr = nullptr;
     BYTE* dataAddr = nullptr;
     BYTE* shellcodeAddr = nullptr;
-    BYTE* shellcode = proc->is32Bits ? x32shellcode : x64shellcode;
+    BYTE* shellcode = proc.is32Bits ? x32shellcode : x64shellcode;
 
     // PE data
-    PE* dll = new PE(dllPath);
-    PEHeaders headers = dll->headers;
-    DWORD sizeOfImage = proc->is32Bits ? headers.pOptionalHeader32->SizeOfImage : headers.pOptionalHeader64->SizeOfImage;
-    uintptr_t imageBase = proc->is32Bits ? headers.pOptionalHeader32->ImageBase : headers.pOptionalHeader64->ImageBase;
-    DWORD sizeOfHeaders = proc->is32Bits ? headers.pOptionalHeader32->SizeOfHeaders : headers.pOptionalHeader64->SizeOfHeaders;
+    PEHeaders headers = dll.headers;
+    DWORD sizeOfImage = proc.is32Bits ? headers.pOptionalHeader32->SizeOfImage : headers.pOptionalHeader64->SizeOfImage;
+    uintptr_t imageBase = proc.is32Bits ? headers.pOptionalHeader32->ImageBase : headers.pOptionalHeader64->ImageBase;
+    DWORD sizeOfHeaders = proc.is32Bits ? headers.pOptionalHeader32->SizeOfHeaders : headers.pOptionalHeader64->SizeOfHeaders;
 
     { // brackets to limit the scope of some variables. This is needed because we are using goto.
         // allocate memory in the target process
         std::cout << "Allocating memory in the target process...\n";
         std::cout << "SizeOfImage: 0x" << std::hex << sizeOfImage << std::endl;
-        baseAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(sizeOfImage, reinterpret_cast<void*>(imageBase)));
+        baseAddr = reinterpret_cast<BYTE*>(proc.AllocMemory(sizeOfImage, reinterpret_cast<void*>(imageBase)));
 
         if (!baseAddr)
         {
-            baseAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(sizeOfImage));
+            baseAddr = reinterpret_cast<BYTE*>(proc.AllocMemory(sizeOfImage));
             if (!baseAddr)
             {
                 std::cerr << "Could not allocate memory in the target process.\n";
@@ -188,7 +199,7 @@ bool ManualMapDll(Process* proc, const char* dllPath)
 
         // write headers
         std::cout << "Writing file headers...\n";
-        if (!proc->WriteMemory(baseAddr, dll->buffer, sizeOfHeaders))
+        if (!proc.WriteMemory(baseAddr, dll.buffer, sizeOfHeaders))
         {
             std::cerr << "Could not write file headers in the target process.\n";
             goto cleanup;
@@ -206,7 +217,7 @@ bool ManualMapDll(Process* proc, const char* dllPath)
                 std::cout << "Mapping section " << std::string(reinterpret_cast<char*>(pSectionHeader->Name)).substr(0, 8) << std::endl;
                 std::cout << "Address: " << std::hex << reinterpret_cast<void*>(baseAddr + pSectionHeader->VirtualAddress)
                     << " size: 0x" << std::hex << pSectionHeader->SizeOfRawData << std::endl;
-                if (!proc->WriteMemory(baseAddr + pSectionHeader->VirtualAddress, dll->buffer + pSectionHeader->PointerToRawData, pSectionHeader->SizeOfRawData))
+                if (!proc.WriteMemory(baseAddr + pSectionHeader->VirtualAddress, dll.buffer + pSectionHeader->PointerToRawData, pSectionHeader->SizeOfRawData))
                 {
                     std::cerr << "Could not map sections in the target process.\n";
                     goto cleanup;
@@ -217,38 +228,37 @@ bool ManualMapDll(Process* proc, const char* dllPath)
 
         // write manual mapping data
         std::cout << "Writing manual mapping data...\n";
-        ManualMappingData data;
+        ManualMappingData data { 0 };
         data.status = 0;
         data.baseAddr = reinterpret_cast<INT64>(baseAddr);
-        MODULEENTRY32 meKernel32 = proc->GetModule("kernel32.dll");
-        PE* kernel32 = new PE(meKernel32.szExePath);
-        data.pGetProcAddress = reinterpret_cast<INT64>(meKernel32.modBaseAddr + kernel32->GetExportRVA("GetProcAddress"));
-        data.pLoadLibraryA = reinterpret_cast<INT64>(meKernel32.modBaseAddr + kernel32->GetExportRVA("LoadLibraryA"));
-        delete kernel32;
+        MODULEENTRY32 meKernel32 = proc.GetModule("kernel32.dll");
+        PE kernel32 = PE(meKernel32.szExePath);
+        data.pGetProcAddress = reinterpret_cast<INT64>(meKernel32.modBaseAddr + kernel32.GetExportRVA("GetProcAddress"));
+        data.pLoadLibraryA = reinterpret_cast<INT64>(meKernel32.modBaseAddr + kernel32.GetExportRVA("LoadLibraryA"));
 
-        dataAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(sizeof(ManualMappingData)));
+        dataAddr = reinterpret_cast<BYTE*>(proc.AllocMemory(sizeof(ManualMappingData)));
         if (!dataAddr)
         {
             std::cerr << "Could not write manual mapping data in the target process.\n";
             goto cleanup;
         }
-        proc->WriteMemory(dataAddr, reinterpret_cast<BYTE*>(&data), sizeof(ManualMappingData));
+        proc.WriteMemory(dataAddr, reinterpret_cast<BYTE*>(&data), sizeof(ManualMappingData));
         std::cout << "Manual mapping data written successfully at 0x" << std::hex << reinterpret_cast<void*>(dataAddr) << "\n\n";
 
         // inject shellcode
         std::cout << "Injecting loader shellcode...\n";
-        shellcodeAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(0x1000));
+        shellcodeAddr = reinterpret_cast<BYTE*>(proc.AllocMemory(0x1000));
         if (!shellcodeAddr)
         {
             std::cerr << "Could not allocate memory for the shellcode in the target process.\n";
             goto cleanup;
         }
-        proc->WriteMemory(shellcodeAddr, shellcode, 0x1000);
+        proc.WriteMemory(shellcodeAddr, shellcode, 0x1000);
         std::cout << "Shellcode injected at 0x" << std::hex << reinterpret_cast<void*>(shellcodeAddr) << "\n\n";
 
         // call shellcode
         std::cout << "Creating remote thread to run the shellcode...\n";
-        HANDLE hThread = CreateRemoteThread(proc->handle, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(shellcodeAddr), dataAddr, 0, nullptr);
+        HANDLE hThread = CreateRemoteThread(proc.handle, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(shellcodeAddr), dataAddr, 0, nullptr);
         if (!hThread)
         {
             std::cerr << "Could not create a thread.\n";
@@ -264,7 +274,7 @@ bool ManualMapDll(Process* proc, const char* dllPath)
             std::cout << "Waiting for shellcode to return... status: " << status << "\n";
             Sleep(1000);
             ManualMappingData dataCheck;
-            proc->ReadMemory(dataAddr, reinterpret_cast<BYTE*>(&dataCheck), sizeof(ManualMappingData));
+            proc.ReadMemory(dataAddr, reinterpret_cast<BYTE*>(&dataCheck), sizeof(ManualMappingData));
             status = dataCheck.status;
         }
         std::cout << "Shellcode finished! status: " << status << "\n\n";
@@ -274,13 +284,12 @@ bool ManualMapDll(Process* proc, const char* dllPath)
 cleanup:
     std::cout << "Cleaning up...\n";
     if (baseAddr)
-        proc->FreeMemory(baseAddr);
+        proc.FreeMemory(baseAddr);
     if (dataAddr)
-        proc->FreeMemory(dataAddr);
+        proc.FreeMemory(dataAddr);
     if (shellcodeAddr)
-        proc->FreeMemory(shellcodeAddr);
-    proc->Close();
-    delete dll;
+        proc.FreeMemory(shellcodeAddr);
+    proc.Close();
     std::cout << "Cleanup done!\n";
 
     return success;
