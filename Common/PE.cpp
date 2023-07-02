@@ -40,6 +40,8 @@ namespace
         return true;
     }
 
+
+    // .NET
     unsigned char GetBlobSize(BYTE* address, DWORD* size)
     {
         *size = 0;
@@ -70,6 +72,11 @@ namespace
             return 1;
         }
     }
+}
+
+PE::PE()
+{
+    //TODO: consider creating a Open(fileName) method 
 }
 
 PE::PE(const char* fileName)
@@ -114,12 +121,70 @@ PE::PE(const char* fileName)
         this->pDataDirectory = this->headers.pOptionalHeader64->DataDirectory;
     }
 
-    // dotnet
+    // .NET
     this->isDotNet = this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress != 0;
     if (this->isDotNet)
     {
         this->ParseDotnetMetadata();
     }
+}
+
+bool PE::Copy(const PE& from, PE& to)
+{
+    if (to.buffer != nullptr)
+    {
+        delete[] to.buffer;
+    }
+    memcpy((void*)to.filePath, (void*)from.filePath, MAX_PATH + 1);
+    memcpy((void*)to.fileName, (void*)from.fileName, MAX_LENGTH + 1);
+
+    // copy buffer
+    to.fileSize = from.fileSize;
+    to.buffer = new BYTE[to.fileSize];
+    memcpy((void*)to.buffer, (void*)from.buffer, to.fileSize);
+
+    to.is32Bits = from.is32Bits;
+    to.isDotNet = from.isDotNet;
+
+    // get PE headers
+    if (!GetPEHeaders(to.buffer, &to.headers))
+    {
+        std::cerr << "Could not get valid PE headers";
+        return false;
+    }
+
+    if (to.is32Bits)
+    {
+        to.pDataDirectory = to.headers.pOptionalHeader32->DataDirectory;
+    }
+    else
+    {
+        to.pDataDirectory = to.headers.pOptionalHeader64->DataDirectory;
+    }
+
+    if (to.isDotNet)
+    {
+        to.ParseDotnetMetadata();
+    }
+
+    return true;
+}
+
+PE::PE(const PE& pe)
+{
+    if (!PE::Copy(pe, *this))
+    {
+        ThrowException(std::string("Could not create copy of PE class"));
+    }
+}
+
+PE& PE::operator=(const PE& pe)
+{
+    if (!PE::Copy(pe, *this))
+    {
+        ThrowException(std::string("Could not assign copy of PE class"));
+    }
+    return *this;
 }
 
 PE::~PE()

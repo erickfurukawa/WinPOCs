@@ -26,10 +26,9 @@ typedef struct PEHeaders
 class PE
 {
 private:
-    PE(const PE&);
-    PE& operator=(const PE&);
+    static bool Copy(const PE& from, PE& to);
 
-    // dotnet related methods -----
+    // .NET related methods -----
     void ParseDotnetMetadata();
     void ParseStringsStream();
     void ParseUSStream();
@@ -37,7 +36,21 @@ private:
     void ParseMetadataTablesStream();
 
 public:
+    char filePath[MAX_PATH + 1] = { 0 };
+    char fileName[MAX_LENGTH + 1] = { 0 };
+    BYTE* buffer = nullptr;
+    size_t fileSize = 0;
+    bool is32Bits = false;
+    bool isDotNet = false;
+
+    PEHeaders headers = PEHeaders();
+    PIMAGE_DATA_DIRECTORY pDataDirectory = nullptr;
+    dotnet::Metadata dotnetMetadata = dotnet::Metadata();
+
+    PE();
     PE(const char* fileName);
+    PE(const PE& pe);
+    PE& operator=(const PE& pe);
     ~PE();
 
     BYTE* RVAToBufferPointer(DWORD rva);
@@ -46,16 +59,4 @@ public:
     DWORD GetImportRVA(const char* moduleName, const char* importName);
     // TODO: ordinal GetImportRVA
     // DWORD GetImportRVA(char* moduleName, DWORD ordinal);
-
-    dotnet::Metadata dotnetMetadata = dotnet::Metadata();
-    bool is32Bits = false;
-    bool isDotNet = false;
-    char filePath[MAX_PATH+1] = { 0 };
-    char fileName[MAX_LENGTH+1] = { 0 };
-
-    BYTE* buffer = nullptr;
-    size_t fileSize = 0;
-
-    PEHeaders headers = PEHeaders();
-    PIMAGE_DATA_DIRECTORY pDataDirectory = nullptr;
 };
