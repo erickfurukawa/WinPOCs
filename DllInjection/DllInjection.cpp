@@ -7,7 +7,8 @@ HANDLE InjectDll(Process* proc, char* dllPath)
     return InjectDll(*proc, dll);
 }
 
-HANDLE InjectDll(Process& proc, char* dllPath) {
+HANDLE InjectDll(Process& proc, char* dllPath)
+{
     PE dll(dllPath);
     return InjectDll(proc, dll);
 }

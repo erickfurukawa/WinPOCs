@@ -20,13 +20,12 @@ int main(int argc, char** argv)
     }
 
     PE dll = PE(dllPath);
-    std::cout << "Injecting dll " << dll.filePath << " into process " << processName << std::endl;
-
     Process proc = Process(processName);
     bool success = false;
     if (proc.Open(PROCESS_CREATE_THREAD | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION))
     {
-        HANDLE hThread = InjectDll(proc, dll.filePath);
+        std::cout << "Injecting dll " << dll.filePath << " into process " << processName << std::endl;
+        HANDLE hThread = InjectDll(proc, dll);
         if (hThread)
         {
             CloseHandle(hThread);
