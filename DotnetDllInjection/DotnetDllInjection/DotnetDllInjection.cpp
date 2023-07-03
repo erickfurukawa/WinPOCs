@@ -39,22 +39,19 @@ int main(int argc, char** argv)
         std::cin.getline(argument, MAX_LENGTH + 1);
     }
 
-    PE* loaderDll = nullptr;
-    PE* injectDll = nullptr;
-    Process* proc = nullptr;
+    PE loaderDll = PE(loaderPath);
+    PE injectDll = PE(dotnetDllPath);
+    Process proc = Process(processName);
     BYTE* argsAddress = nullptr;
 
     { // restrict variable scope because of goto
-        loaderDll = new PE(loaderPath);
-        injectDll = new PE(dotnetDllPath);
-        proc = new Process(processName);
-        if (!proc->Open())
+        if (!proc.Open())
         {
             std::cerr << "Could not open target process\n";
             goto cleanup;
         }
 
-        if (proc->is32Bits != loaderDll->is32Bits)
+        if (proc.is32Bits != loaderDll.is32Bits)
         {
             std::cerr << "Target process and loader bitness are different!\n";
             goto cleanup;
@@ -72,7 +69,7 @@ int main(int argc, char** argv)
         std::wstring wMethodName = token;
         std::wstring wTypeName = fullMethodName.substr(0, fullMethodName.size() - (wMethodName.size() + 1));;
 
-        ToWideString(injectDll->filePath, wstr, MAX_PATH + 1);
+        ToWideString(injectDll.filePath, wstr, MAX_PATH + 1);
         std::wstring wInjectDllPath(wstr);
         ToWideString(argument, wstr, MAX_LENGTH + 1);
         std::wstring wArgument(wstr);
@@ -90,69 +87,69 @@ int main(int argc, char** argv)
         bytesNeeded += (wArgument.size() + 1) * sizeof(wchar_t);
 
         LoaderArgs loaderArgs;
-        argsAddress = reinterpret_cast<BYTE*>(proc->AllocMemory(bytesNeeded));
+        argsAddress = reinterpret_cast<BYTE*>(proc.AllocMemory(bytesNeeded));
         BYTE* currAddress = argsAddress + sizeof(LoaderArgs);
 
         // write argument strings
         loaderArgs.assemblyPath = reinterpret_cast<INT64>(currAddress);
-        proc->WriteMemory(currAddress, (BYTE*)wInjectDllPath.c_str(), (wInjectDllPath.size() + 1) * sizeof(wchar_t));
+        proc.WriteMemory(currAddress, (BYTE*)wInjectDllPath.c_str(), (wInjectDllPath.size() + 1) * sizeof(wchar_t));
         currAddress += (wInjectDllPath.size() + 1) * sizeof(wchar_t);
 
         loaderArgs.typeName = reinterpret_cast<INT64>(currAddress);
-        proc->WriteMemory(currAddress, (BYTE*)wTypeName.c_str(), (wTypeName.size() + 1) * sizeof(wchar_t));
+        proc.WriteMemory(currAddress, (BYTE*)wTypeName.c_str(), (wTypeName.size() + 1) * sizeof(wchar_t));
         currAddress += (wTypeName.size() + 1) * sizeof(wchar_t);
 
         loaderArgs.methodName = reinterpret_cast<INT64>(currAddress);
-        proc->WriteMemory(currAddress, (BYTE*)wMethodName.c_str(), (wMethodName.size() + 1) * sizeof(wchar_t));
+        proc.WriteMemory(currAddress, (BYTE*)wMethodName.c_str(), (wMethodName.size() + 1) * sizeof(wchar_t));
         currAddress += (wMethodName.size() + 1) * sizeof(wchar_t);
 
         loaderArgs.argument = reinterpret_cast<INT64>(currAddress);
-        proc->WriteMemory(currAddress, (BYTE*)wArgument.c_str(), (wArgument.size() + 1) * sizeof(wchar_t));
+        proc.WriteMemory(currAddress, (BYTE*)wArgument.c_str(), (wArgument.size() + 1) * sizeof(wchar_t));
         currAddress += (wArgument.size() + 1) * sizeof(wchar_t);
 
         // write loader args
-        proc->WriteMemory(argsAddress, reinterpret_cast<BYTE*>(&loaderArgs), sizeof(LoaderArgs));
+        proc.WriteMemory(argsAddress, reinterpret_cast<BYTE*>(&loaderArgs), sizeof(LoaderArgs));
 
         std::cout << "Loader arguments allocated at 0x" << std::hex << (uintptr_t)argsAddress << "\n\n";
 
         std::cout << "Injecting loader...\n";
-        HANDLE hThread = InjectDll(proc, loaderDll->filePath);
+        HANDLE hThread = InjectDll(proc, loaderDll.filePath);
         if (!hThread)
         {
             std::cerr << "Could not inject loader into the target process\n";
             goto cleanup;
         }
-        WaitForSingleObject(hThread, 3000);
+        WaitForSingleObject(hThread, INFINITE);
         CloseHandle(hThread);
         std::cout << "Loader dll has probably been injected successfully!\n\n";
 
         // get address of StartDotNetRuntime method -------------
         std::cout << "Finding address of StartDotnetRuntime method...\n";
-        MODULEENTRY32 meLoader = proc->GetModule(loaderDll->fileName);
-        DWORD startRuntimeRVA = loaderDll->GetExportRVA("StartDotnetRuntime");
+        MODULEENTRY32 meLoader = proc.GetModule(loaderDll.fileName);
+        DWORD startRuntimeRVA = loaderDll.GetExportRVA("StartDotnetRuntime");
         void* startRuntimeAddr = meLoader.modBaseAddr + startRuntimeRVA;
         std::cout << "StartDotnetRuntime method at: 0x" << std::hex << (uintptr_t)startRuntimeAddr << "\n";
 
         // run StartDotNetRuntime method
         std::cout << "Running StartDotNetRuntime method...\n\n";
-        hThread = CreateRemoteThread(proc->handle, nullptr, 0, (LPTHREAD_START_ROUTINE)startRuntimeAddr, 0, 0, nullptr);
+        hThread = CreateRemoteThread(proc.handle, nullptr, 0, (LPTHREAD_START_ROUTINE)startRuntimeAddr, 0, 0, nullptr);
         if (!hThread)
         {
             std::cerr << "Could not run StartDotNetRuntime method\n";
             goto cleanup;
         }
-        WaitForSingleObject(hThread, 3000);
+        WaitForSingleObject(hThread, INFINITE);
         CloseHandle(hThread);
 
         // get address of RunMethod method -------------
         std::cout << "Finding address of RunMethod method...\n";
-        DWORD injectRVA = loaderDll->GetExportRVA("RunMethod");
+        DWORD injectRVA = loaderDll.GetExportRVA("RunMethod");
         void* injectAddr = meLoader.modBaseAddr + injectRVA;
         std::cout << "RunMethod method at: 0x" << std::hex << (uintptr_t)injectAddr << "\n";
 
         // run Inject method
         std::cout << "Running RunMethod method...\n\n";
-        hThread = CreateRemoteThread(proc->handle, nullptr, 0, (LPTHREAD_START_ROUTINE)injectAddr, argsAddress, 0, nullptr);
+        hThread = CreateRemoteThread(proc.handle, nullptr, 0, (LPTHREAD_START_ROUTINE)injectAddr, argsAddress, 0, nullptr);
         if (!hThread)
         {
             std::cerr << "Could not run RunMethod method\n";
@@ -165,17 +162,14 @@ int main(int argc, char** argv)
     }
 
 cleanup:
-    if (proc->handle)
+    if (proc.handle)
     {
         if (argsAddress)
         {
-            proc->FreeMemory(argsAddress);
+            proc.FreeMemory(argsAddress);
         }
-        proc->Close();
+        proc.Close();
     }
-    delete proc;
-    delete loaderDll;
-    delete injectDll;
 
     if (success)
     {
