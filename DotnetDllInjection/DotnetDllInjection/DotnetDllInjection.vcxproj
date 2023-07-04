@@ -133,6 +133,10 @@
     <ClCompile Include="..\..\Common\Utils.cpp" />
     <ClCompile Include="..\..\DllInjection\DllInjection.cpp" />
     <ClCompile Include="DotnetDllInjection.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DotnetDllInjection.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
