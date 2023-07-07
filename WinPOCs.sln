@@ -48,6 +48,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DotnetDllInjection", "Dotne
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetHook", "DotnetHook\DotnetHook.csproj", "{CB17F54D-784D-4CA8-8904-16EC620A1515}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TokenPrivileges", "TokenPrivileges\TokenPrivileges.vcxproj", "{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -214,6 +216,18 @@ Global
 		{CB17F54D-784D-4CA8-8904-16EC620A1515}.Release|x64.Build.0 = Release|Any CPU
 		{CB17F54D-784D-4CA8-8904-16EC620A1515}.Release|x86.ActiveCfg = Release|Any CPU
 		{CB17F54D-784D-4CA8-8904-16EC620A1515}.Release|x86.Build.0 = Release|Any CPU
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Debug|Any CPU.Build.0 = Debug|x64
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Debug|x64.ActiveCfg = Debug|x64
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Debug|x64.Build.0 = Debug|x64
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Debug|x86.ActiveCfg = Debug|Win32
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Debug|x86.Build.0 = Debug|Win32
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|Any CPU.ActiveCfg = Release|x64
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|Any CPU.Build.0 = Release|x64
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|x64.ActiveCfg = Release|x64
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|x64.Build.0 = Release|x64
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|x86.ActiveCfg = Release|Win32
+		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
