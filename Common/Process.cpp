@@ -38,18 +38,30 @@ bool Process::Copy(const Process& from, Process& to)
     {
         CloseHandle(to.handle);
     }
+    if (to.token != nullptr)
+    {
+        CloseHandle(to.token);
+    }
 
     to.pid = from.pid;
     to.name = from.name;
     to.mainModule = from.mainModule;
     to.is32Bits = from.is32Bits;
 
-    if (from.handle != nullptr)
+    HANDLE currentProcess = GetCurrentProcess();
+    if (from.handle != nullptr) // duplicate process handle
     {
-        HANDLE currentProcess = GetCurrentProcess();
         if (!DuplicateHandle(currentProcess, from.handle, currentProcess, &to.handle, 0, FALSE, DUPLICATE_SAME_ACCESS))
         {
-            std::cerr << "DuplicateHandle error: " << GetLastError() << "\n";
+            std::cerr << "Process DuplicateHandle error: " << GetLastError() << "\n";
+            return false;
+        }
+    }
+    if (from.token != nullptr) // duplicate process token
+    {
+        if (!DuplicateHandle(currentProcess, from.token, currentProcess, &to.token, 0, FALSE, DUPLICATE_SAME_ACCESS))
+        {
+            std::cerr << "Token DuplicateHandle error: " << GetLastError() << "\n";
             return false;
         }
     }
@@ -77,11 +89,8 @@ Process& Process::operator=(const Process& process)
 
 Process::~Process()
 {
-    if (this->handle)
-    {
-        CloseHandle(this->handle);
-        this->handle = nullptr;
-    }
+    this->Close();
+    this->CloseProcessToken();
 }
 
 bool Process::Open(DWORD access)
@@ -103,6 +112,32 @@ void Process::Close()
     {
         CloseHandle(this->handle);
         this->handle = nullptr;
+    }
+}
+
+bool Process::OpenProcessToken(DWORD access)
+{
+    if (!this->handle)
+    {
+        std::cerr << "Process handle is null.\n";
+        return false;
+    }
+
+    if (!::OpenProcessToken(this->handle, access, &this->token))
+    {
+        std::cerr << "OpenProcessToken error " << GetLastError() << "\n";
+        return false;
+    }
+
+    return true;
+}
+
+void Process::CloseProcessToken()
+{
+    if (this->token)
+    {
+        CloseHandle(this->token);
+        this->token = nullptr;
     }
 }
 

@@ -15,6 +15,7 @@ public:
     DWORD pid = 0;
     std::string name = std::string();
     HANDLE handle = nullptr;
+    HANDLE token = nullptr;
     MODULEENTRY32 mainModule = MODULEENTRY32(); // TODO: remove? since it is a "snapshot" struct
     bool is32Bits = false;
 
@@ -26,6 +27,8 @@ public:
 
     bool Open(DWORD access = PROCESS_ALL_ACCESS);
     void Close();
+    bool OpenProcessToken(DWORD access = TOKEN_ALL_ACCESS);
+    void CloseProcessToken();
     bool Suspend();
     bool Resume();
     bool GetThreadIDs(std::vector<DWORD>& threadIDs);
