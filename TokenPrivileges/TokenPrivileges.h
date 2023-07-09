@@ -14,5 +14,4 @@ std::string LUIDToString(LUID Luid);
 
 bool GetPrivilegeList(HANDLE procToken, std::vector<PrivilegeStatus>& privileges);
 
-// TODO
 bool EnableAllPrivileges(HANDLE procToken);
