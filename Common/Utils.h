@@ -7,7 +7,7 @@ void ThrowException(std::string msg);
 
 void ThrowException(char* msg);
 
-bool FileExists(char* fileName);
+bool FileExists(const char* fileName);
 
 size_t ToWideString(const char* mbstr, wchar_t* wstr, size_t max);
 

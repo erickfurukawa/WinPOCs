@@ -14,7 +14,7 @@ void ThrowException(char* msg)
     ThrowException(std::string(msg));
 }
 
-bool FileExists(char* fileName)
+bool FileExists(const char* fileName)
 {
     std::ifstream file;
     file.open(fileName);
