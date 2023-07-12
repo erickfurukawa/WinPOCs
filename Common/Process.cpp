@@ -427,7 +427,7 @@ MODULEENTRY32 Process::GetModule(const char* modName)
     hModuleSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE32 | TH32CS_SNAPMODULE, this->pid);
     if (hModuleSnap == INVALID_HANDLE_VALUE)
     {
-        std::cerr << "CreateToolhelp32Snapshot error\n";
+        std::cerr << "CreateToolhelp32Snapshot error " << GetLastError() << std::endl;
         return MODULEENTRY32{ 0 };
     }
 
@@ -484,6 +484,37 @@ bool Process::GetProcessInformation(ProcessInformation* pbi)
         return false;
     }
     return true;
+}
+
+Process Process::NewProcess(const char* exeFile, DWORD dwCreationFlags)
+{
+    char fullPath[MAX_PATH] = { 0 };
+    Process proc;
+
+    if (FileExists(exeFile))
+    {
+        GetFullPathNameA(exeFile, MAX_PATH, fullPath, nullptr);
+
+        STARTUPINFO si = { 0 };
+        PROCESS_INFORMATION pi = { 0 };
+        si.cb = sizeof(si);
+        if (CreateProcessA(fullPath, NULL, NULL, NULL, FALSE, dwCreationFlags, NULL, NULL, &si, &pi))
+        {
+            CloseHandle(pi.hProcess);
+            CloseHandle(pi.hThread);
+            proc = Process(pi.dwProcessId);
+        }
+        else
+        {
+            std::cerr << "CreateProcessA error " << GetLastError() << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "File does not exist: " << exeFile << std::endl;
+    }
+
+    return proc;
 }
 
 bool Process::GetProccessEntry(const char* procName, DWORD pid, PROCESSENTRY32* procEntry)

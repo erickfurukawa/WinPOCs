@@ -16,9 +16,10 @@ public:
     std::string name = std::string();
     HANDLE handle = nullptr;
     HANDLE token = nullptr;
-    MODULEENTRY32 mainModule = MODULEENTRY32(); // TODO: remove? since it is a "snapshot" struct
+    MODULEENTRY32 mainModule = MODULEENTRY32(); // TODO: remove? since it is a "snapshot" struct. see TODO #1
     bool is32Bits = false;
 
+    Process() = default;
     Process(const char* procName);
     Process(DWORD pid);
     Process(const Process& process);
@@ -43,6 +44,15 @@ public:
     SIZE_T VirtualQuery(LPCVOID addr, PMEMORY_BASIC_INFORMATION pMemInfo);
     BYTE* ScanMemory(BYTE* pattern, char* mask, PVOID addr, uintptr_t size);
     MODULEENTRY32 GetModule(const char* modName);
+
+    // ************************************ static methods ************************************
+
+    /*
+    * Starts a new process from exeFile.
+    * The function might return before the process has finished initializing.
+    * TODO #1: fix GetModule(mainModule) error because the process hasn't initialized
+    */
+    static Process NewProcess(const char* exeFile, DWORD dwCreationFlags = 0);
 
     /* 
     * Gets PROCESSENTRY32 of a process by name or pid.
