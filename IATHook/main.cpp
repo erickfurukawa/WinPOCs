@@ -39,19 +39,18 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    Process* proc = new Process(processName);
+    Process proc = Process(processName);
     bool success = false;
-    if (proc->Open())
+    if (proc.Open())
     {
         if (InstallIATHook(proc, targetModule, targetFunction, hookDll, hookFunction))
         {
             std::cout << "IAT hook installed successfully!\n";
             success = true;
         }
-        proc->Close();
+        proc.Close();
     }
 
-    delete proc;
     if (success)
         return 0;
     return 1;
