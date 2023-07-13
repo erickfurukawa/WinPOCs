@@ -441,6 +441,12 @@ MODULEENTRY32 Process::GetModule(const char* modName)
 
     do // loops through modules
     {
+        // TODO: there must be a better way to only find 32 bit modules in a 32 bit process
+        bool is64bitModule = reinterpret_cast<uintptr_t>(mod32.modBaseAddr) > MAXUINT32;
+        if (this->is32Bits && is64bitModule)
+        {
+            continue;
+        }
         if (_strcmpi(modName, mod32.szModule) == 0)
         {
             found = true;
