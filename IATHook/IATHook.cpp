@@ -22,9 +22,9 @@ bool InstallIATHook(Process& proc, char* targetModule, char* targetFunction, cha
         uintptr_t hookAddr = reinterpret_cast<uintptr_t>(meDll.modBaseAddr + hookFunctionRVA);
 
         // get targetFunction IAT address
-        PE procPE = PE(proc.mainModule.szExePath);
+        PE procPE = PE(proc.GetMainModule().szExePath);
         DWORD targetFunctionRVA = procPE.GetImportRVA(targetModule, targetFunction);
-        BYTE* IATaddr = proc.mainModule.modBaseAddr + targetFunctionRVA;
+        BYTE* IATaddr = proc.GetMainModule().modBaseAddr + targetFunctionRVA;
 
         if (hookFunctionRVA && targetFunctionRVA)
         {

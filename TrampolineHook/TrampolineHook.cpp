@@ -72,9 +72,9 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
         uintptr_t trampolineAddrPtr = reinterpret_cast<uintptr_t>(meDll.modBaseAddr) + trampolineAddrPtrRVA;
 
         // get targetFunction IAT address
-        PE* procPE = new PE(proc->mainModule.szExePath);
+        PE* procPE = new PE(proc->GetMainModule().szExePath);
         DWORD targetFunctionRVA = procPE->GetImportRVA(targetModule, targetFunction);
-        uintptr_t IATaddr = reinterpret_cast<uintptr_t>(proc->mainModule.modBaseAddr) + targetFunctionRVA;
+        uintptr_t IATaddr = reinterpret_cast<uintptr_t>(proc->GetMainModule().modBaseAddr) + targetFunctionRVA;
         delete procPE;
 
         // get targetFunction address

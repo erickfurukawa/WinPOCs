@@ -9,7 +9,6 @@ Process::Process(const char* procName)
     {
         this->pid = pe32.th32ProcessID;
         this->name = std::string(pe32.szExeFile);
-        this->mainModule = this->GetModule(pe32.szExeFile);
     }
     else
     {
@@ -24,7 +23,6 @@ Process::Process(DWORD pid)
     {
         this->pid = pe32.th32ProcessID;
         this->name = std::string(pe32.szExeFile);
-        this->mainModule = this->GetModule(pe32.szExeFile);
     }
     else
     {
@@ -45,7 +43,6 @@ bool Process::Copy(const Process& from, Process& to)
 
     to.pid = from.pid;
     to.name = from.name;
-    to.mainModule = from.mainModule;
     to.is32Bits = from.is32Bits;
 
     HANDLE currentProcess = GetCurrentProcess();
@@ -420,7 +417,7 @@ BYTE* Process::ScanMemory(BYTE* pattern, char* mask, PVOID addr, uintptr_t size)
 MODULEENTRY32 Process::GetModule(const char* modName)
 {
     HANDLE hModuleSnap;
-    MODULEENTRY32 mod32;
+    MODULEENTRY32 mod32 { 0 };
     bool found = false;
 
     // creates process snapshot
@@ -461,6 +458,11 @@ MODULEENTRY32 Process::GetModule(const char* modName)
         mod32 = MODULEENTRY32{ 0 };
     }
     return mod32;
+}
+
+MODULEENTRY32 Process::GetMainModule()
+{
+    return this->GetModule(this->name.c_str());
 }
 
 bool Process::GetProcessInformation(ProcessInformation* pbi)

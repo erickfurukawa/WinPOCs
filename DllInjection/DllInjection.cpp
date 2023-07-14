@@ -35,7 +35,7 @@ HANDLE InjectDll(Process& proc, PE& dll)
     if (!hThread)
     {
         std::cerr << "CreateRemoteThread error " << GetLastError() << std::endl;
-        std::cerr << "Could not inject dll " << dll.filePath << " into the target process " << proc.mainModule.szModule << std::endl;
+        std::cerr << "Could not inject dll " << dll.filePath << " into the target process " << proc.name << std::endl;
     }
     return hThread;
 }
