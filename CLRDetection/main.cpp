@@ -22,26 +22,25 @@ int main(int argc, char** argv)
     }
     else
     {
-        char processName[MAX_LENGTH+1];
-        strncpy_s(processName, argv[1], MAX_LENGTH+1);
+        char processName[MAX_LENGTH];
+        strncpy_s(processName, argv[1], MAX_LENGTH);
 
-        Process* proc = new Process(processName);
+        Process proc = Process(processName);
 
-        if (proc->Open())
+        if (proc.Open())
         {
             std::cout << "Loaded runtimes in " << processName << ": " << std::endl;
-            pMetaHost->EnumerateLoadedRuntimes(proc->handle, &runtime);
+            pMetaHost->EnumerateLoadedRuntimes(proc.handle, &runtime);
             EnumerateRuntimes(&runtime);
             runtime->Release();
 
-            proc->Close();
+            proc.Close();
             success = true;
         }
         else 
         {
             std::cerr << "OpenProccess error " << GetLastError() << std::endl;
         }
-        delete proc;
     }
     pMetaHost->Release();
 
