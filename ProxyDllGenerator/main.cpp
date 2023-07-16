@@ -21,7 +21,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    PE* dll = new PE(dllPath);
+    PE dll = PE(dllPath);
     if (GenerateProxyDll(dll))
     {
         std::cout << "Proxy Dll files generated successfully!\n";
@@ -30,5 +30,4 @@ int main(int argc, char** argv)
     {
         std::cerr << "Failed to generate proxy dll files\n";
     }
-    delete dll;
 }

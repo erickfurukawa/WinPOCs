@@ -2,4 +2,4 @@
 
 #include "../Common/PE.h"
 
-bool GenerateProxyDll(PE* dll);
+bool GenerateProxyDll(PE& dll);

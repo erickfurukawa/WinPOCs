@@ -16,20 +16,20 @@ namespace
     } Export;
     const char structName[] = "DllInfo";
 
-    std::vector<Export> GetExports(PE* dll)
+    std::vector<Export> GetExports(PE& dll)
     {
         std::vector<Export> exports;
         PIMAGE_EXPORT_DIRECTORY pExportDirectory = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(
-            dll->RVAToBufferPointer(dll->pDataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
+            dll.RVAToBufferPointer(dll.pDataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress));
 
-        WORD* pOrdinal = reinterpret_cast<WORD*>(dll->RVAToBufferPointer(pExportDirectory->AddressOfNameOrdinals));
-        DWORD* pFuncNameRVA = reinterpret_cast<DWORD*>(dll->RVAToBufferPointer(pExportDirectory->AddressOfNames));
+        WORD* pOrdinal = reinterpret_cast<WORD*>(dll.RVAToBufferPointer(pExportDirectory->AddressOfNameOrdinals));
+        DWORD* pFuncNameRVA = reinterpret_cast<DWORD*>(dll.RVAToBufferPointer(pExportDirectory->AddressOfNames));
         for (int i = 0; i < pExportDirectory->NumberOfNames; i++)
         {
             if (*pFuncNameRVA)
             {
                 // TODO: forwarder RVA 
-                std::string funcName = std::string(reinterpret_cast<char*>(dll->RVAToBufferPointer(*pFuncNameRVA)));
+                std::string funcName = std::string(reinterpret_cast<char*>(dll.RVAToBufferPointer(*pFuncNameRVA)));
                 exports.push_back(Export{funcName, *pOrdinal + pExportDirectory->Base});
             }
             else
@@ -214,12 +214,12 @@ namespace
     }
 }
 
-bool GenerateProxyDll(PE* dll)
+bool GenerateProxyDll(PE& dll)
 {
     std::vector<Export> exports = GetExports(dll);
-    std::string dllName = std::string(dll->fileName).substr(0, strnlen(dll->fileName, MAX_LENGTH + 1) - 4);
-    if (GenerateDef(exports, dllName) && GenerateCpp(exports, dllName, dll->is32Bits)) {
-        if (!dll->is32Bits)
+    std::string dllName = std::string(dll.fileName).substr(0, strnlen(dll.fileName, MAX_LENGTH + 1) - 4);
+    if (GenerateDef(exports, dllName) && GenerateCpp(exports, dllName, dll.is32Bits)) {
+        if (!dll.is32Bits)
         {
             return GenerateAsm(exports, dllName);
         }
