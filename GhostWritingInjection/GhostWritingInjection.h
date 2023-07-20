@@ -14,8 +14,8 @@ private:
 
 public:
     GhostWriter(DWORD threadID, bool is32Bit);
-    void SuspendThread();
-    void ResumeThread();
+    bool SuspendThread();
+    bool ResumeThread();
     void SetLoopGadget(BYTE* address);
     void SetWriteGadget(BYTE* address);
     void WaitForLoop();
