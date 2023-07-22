@@ -2,14 +2,30 @@
 #include "GhostWritingInjection.h"
 #include "../Common/Utils.h"
 
-GhostWriter::GhostWriter(DWORD threadID, bool is32Bits)
+namespace
+{
+    bool is32BitsThread(HANDLE threadHandle)
+    {
+        DWORD pid = GetProcessIdOfThread(threadHandle);
+        HANDLE procHandle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION , false, pid);
+        BOOL isWow64 = false;
+        if (!IsWow64Process(procHandle, &isWow64))
+        {
+            std::cerr << "IsWow64Process error " << GetLastError() << std::endl;
+        }
+        CloseHandle(procHandle);
+        return isWow64;
+    }
+}
+
+GhostWriter::GhostWriter(DWORD threadID)
 {
     this->threadHandle = OpenThread(THREAD_ALL_ACCESS, FALSE, threadID);
     if (!this->threadHandle)
     {
         ThrowException(std::string("GhostWriter: OpenThread error ") + std::to_string(GetLastError()));
     }
-    this->is32Bits = is32Bits;
+    this->is32Bits = is32BitsThread(this->threadHandle);
 
     // save thread context to restore later
     // TODO: remove. original context must be read when we call the gadgets for the first time.

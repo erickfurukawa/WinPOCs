@@ -13,7 +13,7 @@ private:
     BYTE* writeGadgetAddr = nullptr;
 
 public:
-    GhostWriter(DWORD threadID, bool is32Bits);
+    GhostWriter(DWORD threadID);
     bool SuspendThread();
     bool ResumeThread();
     void GetContext(void* context);
