@@ -196,7 +196,8 @@ PE::~PE()
     }
 }
 
-BYTE* PE::RVAToBufferPointer(DWORD rva) {
+BYTE* PE::RVAToBufferPointer(DWORD rva)
+{
     PIMAGE_FILE_HEADER pFileHeader = this->headers.pFileHeader;
     PIMAGE_SECTION_HEADER pSectionHeader = this->headers.pSectionHeader;
 
@@ -212,6 +213,24 @@ BYTE* PE::RVAToBufferPointer(DWORD rva) {
     return nullptr;
 }
 
+DWORD PE::BufferToRVA(BYTE* buffer)
+{
+    PIMAGE_FILE_HEADER pFileHeader = this->headers.pFileHeader;
+    PIMAGE_SECTION_HEADER pSectionHeader = this->headers.pSectionHeader;
+
+    for (int i = 0; i < pFileHeader->NumberOfSections; i++)
+    {
+        if (buffer >= this->buffer + pSectionHeader->PointerToRawData 
+            && buffer < this->buffer + pSectionHeader->PointerToRawData + pSectionHeader->SizeOfRawData)
+        {
+            DWORD offset = static_cast<DWORD>(buffer - this->buffer) - pSectionHeader->PointerToRawData;
+            return pSectionHeader->VirtualAddress + offset;
+        }
+        pSectionHeader++;
+    }
+    return 0;
+}
+
 // TODO: forwarder RVA https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#export-address-table
 DWORD PE::GetExportRVA(const char* exportName)
 {
@@ -221,7 +240,7 @@ DWORD PE::GetExportRVA(const char* exportName)
     DWORD* pExportRVA = reinterpret_cast<DWORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfFunctions));
     WORD* pOrdinal = reinterpret_cast<WORD*>(this->RVAToBufferPointer(pExportDirectory->AddressOfNameOrdinals));
 
-    for (int i = 0; i < pExportDirectory->NumberOfNames; i++)
+    for (unsigned int i = 0; i < pExportDirectory->NumberOfNames; i++)
     {
         if (_strcmpi(exportName, reinterpret_cast<char*>(this->RVAToBufferPointer(*pExportNameRVA))) == 0)
         {
@@ -285,6 +304,33 @@ DWORD PE::GetImportRVA(const char* moduleName, const char* importName)
     }
     std::cerr << "Could not find IAT entry for " << moduleName << "." << importName << "\n";
     return 0;
+}
+
+BYTE* PE::ScanFile(const BYTE* pattern, const char* mask)
+{
+    return ScanPattern(pattern, mask, this->buffer, this->fileSize);
+}
+
+BYTE* PE::ScanSections(const BYTE* pattern, const char* mask, bool executable)
+{
+    PIMAGE_FILE_HEADER pFileHeader = this->headers.pFileHeader;
+    PIMAGE_SECTION_HEADER pSectionHeader = this->headers.pSectionHeader;
+
+    for (int i = 0; i < pFileHeader->NumberOfSections; i++)
+    {
+        bool executableSection = pSectionHeader->Characteristics & IMAGE_SCN_MEM_EXECUTE;
+
+        if (!executable || executableSection)
+        {
+            BYTE* match = ScanPattern(pattern, mask, this->buffer + pSectionHeader->PointerToRawData, pSectionHeader->SizeOfRawData);
+            if (match)
+            {
+                return match;
+            }
+        }
+        pSectionHeader++;
+    }
+    return nullptr;
 }
 
 void PE::ParseDotnetMetadata()

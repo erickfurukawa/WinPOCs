@@ -54,9 +54,15 @@ public:
     ~PE();
 
     BYTE* RVAToBufferPointer(DWORD rva);
+    DWORD BufferToRVA(BYTE* buffer);
     DWORD GetExportRVA(const char* exportName);
     DWORD GetExportRVA(DWORD ordinal);
     DWORD GetImportRVA(const char* moduleName, const char* importName);
     // TODO: ordinal GetImportRVA
     // DWORD GetImportRVA(char* moduleName, DWORD ordinal);
+
+    BYTE* ScanFile(const BYTE* pattern, const char* mask);
+    BYTE* ScanSections(const BYTE* pattern, const char* mask, bool executable = false);
+    // TODO: multiple scan?
+    // TODO: method to get list of sections?
 };

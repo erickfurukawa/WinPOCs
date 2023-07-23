@@ -33,7 +33,7 @@ size_t ToWideString(const char* mbstr, wchar_t* wstr, size_t max)
     return convertedSize;
 }
 
-BYTE* ScanPattern(BYTE* pattern, char* mask, BYTE* src, uintptr_t srcSize)
+BYTE* ScanPattern(const BYTE* pattern, const char* mask, const BYTE* src, uintptr_t srcSize)
 {
     uintptr_t patternLen = strnlen(mask, srcSize);
     for (uintptr_t i = 0; i < srcSize; i++)
@@ -52,7 +52,7 @@ BYTE* ScanPattern(BYTE* pattern, char* mask, BYTE* src, uintptr_t srcSize)
         }
         if (found)
         {
-            return src + i;
+            return const_cast<BYTE*>(src + i);
         }
     }
     return nullptr;
