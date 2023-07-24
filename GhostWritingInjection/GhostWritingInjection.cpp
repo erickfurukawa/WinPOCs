@@ -16,6 +16,18 @@ namespace
         CloseHandle(procHandle);
         return isWow64;
     }
+
+    uintptr_t GetRIP(void* context, bool is32Bits)
+    {
+        if (is32Bits)
+        {
+            return reinterpret_cast<PCONTEXT>(context)->Rip;
+        }
+        else
+        {
+            return reinterpret_cast<PWOW64_CONTEXT>(context)->Eip;
+        }
+    }
 }
 
 GhostWriter::GhostWriter(DWORD threadID)
@@ -26,21 +38,6 @@ GhostWriter::GhostWriter(DWORD threadID)
         ThrowException(std::string("GhostWriter: OpenThread error ") + std::to_string(GetLastError()));
     }
     this->is32Bits = is32BitsThread(this->threadHandle);
-
-    // save thread context to restore later
-    // TODO: remove. original context must be read when we call the gadgets for the first time.
-    this->SuspendThread();
-    if (is32Bits)
-    {
-        this->originalContext = std::make_unique<BYTE[]>(sizeof(WOW64_CONTEXT));
-        Wow64GetThreadContext(this->threadHandle, reinterpret_cast<PWOW64_CONTEXT>(this->originalContext.get()));
-    }
-    else
-    {
-        this->originalContext = std::make_unique<BYTE[]>(sizeof(CONTEXT));
-        GetThreadContext(this->threadHandle, reinterpret_cast<LPCONTEXT>(this->originalContext.get()));
-    }
-    this->ResumeThread();
 }
 
 bool GhostWriter::SuspendThread()
@@ -99,4 +96,22 @@ void GhostWriter::SetContext(void* context)
         SetThreadContext(this->threadHandle, reinterpret_cast<LPCONTEXT>(context));
     }
     this->ResumeThread();
+}
+
+void GhostWriter::WaitForLoop()
+{
+    unsigned int contextSize = max(sizeof(CONTEXT), sizeof(WOW64_CONTEXT));
+    auto context = std::make_unique<BYTE[]>(contextSize);
+
+    while (true)
+    {
+        this->SuspendThread();
+        this->GetContext(context.get());
+        this->ResumeThread();
+        if (reinterpret_cast<uintptr_t>(this->loopGadgetAddr) == GetRIP(context.get(), this->is32Bits))
+        {
+            return;
+        }
+        Sleep(100);
+    }
 }
