@@ -1,6 +1,7 @@
 #pragma once
 #include <windows.h>
 #include <memory>
+#include "../Common/PE.h"
 
 class GhostWriter
 {
@@ -8,12 +9,12 @@ private:
     HANDLE threadHandle = nullptr;
     bool is32Bits = false;
 
-    std::unique_ptr<BYTE[]> originalContext = {0};
     BYTE* loopGadgetAddr = nullptr;
     BYTE* writeGadgetAddr = nullptr;
 
 public:
     GhostWriter(DWORD threadID);
+    HANDLE GetThreadHandle();
     bool SuspendThread();
     bool ResumeThread();
     void GetContext(void* context);
@@ -24,3 +25,5 @@ public:
     void CallWriteGadget(uintptr_t what, uintptr_t where);
     void Detach();
 };
+
+bool GhostWritingInjection(DWORD threadID, PE& dll);

@@ -1,6 +1,7 @@
 #include <iostream>
 #include "GhostWritingInjection.h"
 #include "../Common/Utils.h"
+#include "../Common/Process.h"
 
 namespace
 {
@@ -38,6 +39,11 @@ GhostWriter::GhostWriter(DWORD threadID)
         ThrowException(std::string("GhostWriter: OpenThread error ") + std::to_string(GetLastError()));
     }
     this->is32Bits = is32BitsThread(this->threadHandle);
+}
+
+HANDLE GhostWriter::GetThreadHandle()
+{
+    return this->threadHandle;
 }
 
 bool GhostWriter::SuspendThread()
@@ -113,5 +119,29 @@ void GhostWriter::WaitForLoop()
             return;
         }
         Sleep(100);
+    }
+}
+
+// ***********************************
+
+namespace
+{
+    BYTE* FindLoopGadget(Process& proc)
+    {
+        MODULEENTRY32 meNtdll = proc.GetModule("ntdll.dll");
+        PE peNtdll = PE(meNtdll.szExePath);
+
+        BYTE* loopGadgetPtr = peNtdll.ScanSections((BYTE*)"\xEB\xFE", "..", true);
+        if (!loopGadgetPtr)
+        {
+            std::cerr << "Could not find loop gadget\n";
+            return 0;
+        }
+        return meNtdll.modBaseAddr + peNtdll.BufferToRVA(loopGadgetPtr);
+    }
+
+    BYTE* FindWriteGadget(Process& proc)
+    {
+        return 0;
     }
 }
