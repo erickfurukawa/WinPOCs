@@ -33,9 +33,15 @@
     <ClCompile Include="..\Common\Process.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ThreadContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GhostWritingInjection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

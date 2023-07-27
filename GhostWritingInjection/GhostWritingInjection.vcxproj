@@ -133,9 +133,11 @@
     <ClCompile Include="..\Common\Utils.cpp" />
     <ClCompile Include="GhostWritingInjection.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ThreadContext.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GhostWritingInjection.h" />
+    <ClInclude Include="ThreadContext.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -23,10 +23,12 @@ public:
     void SetLoopGadget(BYTE* address);
     void SetPushGadget(BYTE* address);
     void SetWriteGadget(BYTE* address);
+    void WriteBytes(BYTE* buffer, size_t bufferSize, uintptr_t where);
     void WaitForLoop();
-    void CallPushGadget(uintptr_t retAddress);
+    // makes thread loop
+    void CallPushGadget();
+    // write-what-where. stack pointer must contain loop gadget address
     void CallWriteGadget(uintptr_t what, uintptr_t where);
-    void Detach();
 };
 
 bool GhostWritingInjection(DWORD threadID, PE& dll);
