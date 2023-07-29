@@ -50,6 +50,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetHook", "DotnetHook\Do
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TokenPrivileges", "TokenPrivileges\TokenPrivileges.vcxproj", "{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GhostWritingInjection", "GhostWritingInjection\GhostWritingInjection.vcxproj", "{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -228,6 +230,18 @@ Global
 		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|x64.Build.0 = Release|x64
 		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|x86.ActiveCfg = Release|Win32
 		{DFA54A74-26A5-4C9F-8BD1-F04400CC0A00}.Release|x86.Build.0 = Release|Win32
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Debug|Any CPU.Build.0 = Debug|x64
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Debug|x64.ActiveCfg = Debug|x64
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Debug|x64.Build.0 = Debug|x64
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Debug|x86.ActiveCfg = Debug|Win32
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Debug|x86.Build.0 = Debug|Win32
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|Any CPU.ActiveCfg = Release|x64
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|Any CPU.Build.0 = Release|x64
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|x64.ActiveCfg = Release|x64
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|x64.Build.0 = Release|x64
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|x86.ActiveCfg = Release|Win32
+		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
