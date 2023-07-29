@@ -7,24 +7,27 @@ class GhostWriter
 {
 private:
     HANDLE threadHandle = nullptr;
-    bool is32Bits = false;
 
+public:
+    bool is32Bits = false;
+    /*
+        an address that contains the address to the loop gadget.
+        used by write gadget to return to the loop.
+    */
+    BYTE* loopGadgetPtrAddr = nullptr;
     BYTE* loopGadgetAddr = nullptr;
     BYTE* pushGadgetAddr = nullptr;
     BYTE* writeGadgetAddr = nullptr;
 
-public:
     GhostWriter(DWORD threadID);
     HANDLE GetThreadHandle();
     bool SuspendThread();
     bool ResumeThread();
     void GetContext(void* context);
     void SetContext(void* context);
-    void SetLoopGadget(BYTE* address);
-    void SetPushGadget(BYTE* address);
-    void SetWriteGadget(BYTE* address);
     void WriteBytes(BYTE* buffer, size_t bufferSize, uintptr_t where);
     void WaitForLoop();
+    void CallFunctionAt(BYTE* address);
     // makes thread loop
     void CallPushGadget();
     // write-what-where. stack pointer must contain loop gadget address

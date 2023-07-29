@@ -1,13 +1,5 @@
 #include "ThreadContext.h"
 
-ThreadContext::ThreadContext()
-{
-    unsigned int contextSize = max(sizeof(CONTEXT), sizeof(WOW64_CONTEXT));
-    this->context = std::make_unique<BYTE[]>(contextSize);
-
-    reinterpret_cast<PCONTEXT>(this->context.get())->ContextFlags = CONTEXT_ALL;
-}
-
 ThreadContext::ThreadContext(bool is32Bits)
 {
     this->is32Bits = is32Bits;
@@ -51,6 +43,18 @@ uintptr_t ThreadContext::GetRsp()
     else
     {
         return reinterpret_cast<LPCONTEXT>(this->context.get())->Rsp;
+    }
+}
+
+uintptr_t ThreadContext::GetRax()
+{
+    if (this->is32Bits)
+    {
+        return reinterpret_cast<PWOW64_CONTEXT>(this->context.get())->Eax;
+    }
+    else
+    {
+        return reinterpret_cast<LPCONTEXT>(this->context.get())->Rax;
     }
 }
 
@@ -102,6 +106,7 @@ void ThreadContext::SetRdx(uintptr_t rdx)
         reinterpret_cast<PCONTEXT>(this->context.get())->Rdx = rdx;
     }
 }
+
 void ThreadContext::SetRdi(uintptr_t rdi)
 {
     if (this->is32Bits)
@@ -111,5 +116,29 @@ void ThreadContext::SetRdi(uintptr_t rdi)
     else
     {
         reinterpret_cast<PCONTEXT>(this->context.get())->Rdi = rdi;
+    }
+}
+
+void ThreadContext::SetR9(uintptr_t r9)
+{
+    if (this->is32Bits)
+    {
+        
+    }
+    else
+    {
+        reinterpret_cast<PCONTEXT>(this->context.get())->R9 = r9;
+    }
+}
+
+void ThreadContext::SetR8(uintptr_t r8)
+{
+    if (this->is32Bits)
+    {
+
+    }
+    else
+    {
+        reinterpret_cast<PCONTEXT>(this->context.get())->R8 = r8;
     }
 }
