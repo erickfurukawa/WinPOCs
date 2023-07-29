@@ -19,7 +19,7 @@ public:
     BYTE* pushGadgetAddr = nullptr;
     BYTE* writeGadgetAddr = nullptr;
 
-    GhostWriter(DWORD threadID);
+    GhostWriter(DWORD threadID, bool is32Bits);
     HANDLE GetThreadHandle();
     bool SuspendThread();
     bool ResumeThread();

