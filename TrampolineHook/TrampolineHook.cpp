@@ -15,6 +15,7 @@
 
 #ifdef _WIN64
 #define ABS_JMP_SIZE 17
+// TODO: This apparently triggers CET. change to jmp r11 or something.
 #define ABS_JMP_BYTES "\x50\xC7\x04\x24\xEF\xBE\xAD\xDE\xC7\x44\x24\x04\xEF\xBE\xAD\xDE\xC3"
 #define REL_JMP_SIZE 5
 #define REL_JMP_BYTES "\xE9\xEF\xBE\xAD\xDE"
@@ -48,44 +49,44 @@ namespace // anonymous namespace for utility functions
 #endif
 }
 
-bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFunction, char* hookDll, char* hookFunction)
+bool InstallTrampolineHook(Process& proc, char* targetModule, char* targetFunction, char* hookDll, char* hookFunction)
 {
     bool success = false;
-    PE* dll = new PE(hookDll);
-    HANDLE hThread = InjectDll(proc, dll->filePath);
+    PE dll = PE(hookDll);
     BYTE* trampolineAddr = nullptr;
     BYTE* relayAddr = nullptr;
 
+    HANDLE hThread = InjectDll(proc, dll.filePath);
     if (hThread)
     {
         WaitForSingleObject(hThread, 3000);
         CloseHandle(hThread);
 
         // get hookFunction address
-        MODULEENTRY32 meDll = proc->GetModule(dll->fileName);
-        DWORD hookFunctionRVA = dll->GetExportRVA(hookFunction);
+        MODULEENTRY32 meDll = proc.GetModule(dll.fileName);
+        DWORD hookFunctionRVA = dll.GetExportRVA(hookFunction);
         uintptr_t hookAddr = reinterpret_cast<uintptr_t>(meDll.modBaseAddr) + hookFunctionRVA;
 
         // get trampolineAddrPtr export address
         std::string trampolineName = std::string(ORIGINAL_FUNC_POINTER_PREFIX) + targetFunction;
-        DWORD trampolineAddrPtrRVA = dll->GetExportRVA(const_cast<char*>(trampolineName.c_str()));
+        DWORD trampolineAddrPtrRVA = dll.GetExportRVA(const_cast<char*>(trampolineName.c_str()));
         uintptr_t trampolineAddrPtr = reinterpret_cast<uintptr_t>(meDll.modBaseAddr) + trampolineAddrPtrRVA;
 
+        // TODO: is it really necessary to read from IAT? 
         // get targetFunction IAT address
-        PE* procPE = new PE(proc->GetMainModule().szExePath);
-        DWORD targetFunctionRVA = procPE->GetImportRVA(targetModule, targetFunction);
-        uintptr_t IATaddr = reinterpret_cast<uintptr_t>(proc->GetMainModule().modBaseAddr) + targetFunctionRVA;
-        delete procPE;
+        PE procPE = PE(proc.GetMainModule().szExePath);
+        DWORD targetFunctionRVA = procPE.GetImportRVA(targetModule, targetFunction);
+        uintptr_t IATaddr = reinterpret_cast<uintptr_t>(proc.GetMainModule().modBaseAddr) + targetFunctionRVA;
 
         // get targetFunction address
         uintptr_t targetFuncAddr;
-        proc->ReadMemory(reinterpret_cast<LPCVOID>(IATaddr), reinterpret_cast<BYTE*>(&targetFuncAddr), sizeof(void*));
+        proc.ReadMemory(reinterpret_cast<LPCVOID>(IATaddr), reinterpret_cast<BYTE*>(&targetFuncAddr), sizeof(void*));
 
         if (hookFunctionRVA && targetFunctionRVA && trampolineAddrPtrRVA)
         {
             // read first bytes of instructions from target function
             BYTE code[MAX_STOLEN_BYTES];
-            proc->ReadMemory(reinterpret_cast<BYTE*>(targetFuncAddr), code, MAX_STOLEN_BYTES);
+            proc.ReadMemory(reinterpret_cast<BYTE*>(targetFuncAddr), code, MAX_STOLEN_BYTES);
 
             // use capstone to find the number of stolen bytes
             csh handle;
@@ -119,7 +120,7 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
 
             // alloc memory for relay in reachable memory
             relayAddr = reinterpret_cast<BYTE*>(
-                    proc->AllocMemory(ABS_JMP_SIZE, 
+                    proc.AllocMemory(ABS_JMP_SIZE, 
                         reinterpret_cast<LPVOID>(MIN_JMP_RANGE(targetFuncAddr)),
                         reinterpret_cast<LPVOID>(MAX_JMP_RANGE(targetFuncAddr))
                     )
@@ -127,26 +128,26 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
 
             BYTE relay[ABS_JMP_SIZE];
             BuildAbsoluteJump(relay, hookAddr); // relay -> hookFunction
-            proc->WriteMemory(relayAddr, relay, ABS_JMP_SIZE); // write relay
+            proc.WriteMemory(relayAddr, relay, ABS_JMP_SIZE); // write relay
 
             // alloc memory for trampoline
-            trampolineAddr = reinterpret_cast<BYTE*>(proc->AllocMemory(stolenBytesSize + ABS_JMP_SIZE));
+            trampolineAddr = reinterpret_cast<BYTE*>(proc.AllocMemory(stolenBytesSize + ABS_JMP_SIZE));
             BYTE* trampoline = new BYTE[stolenBytesSize + ABS_JMP_SIZE];
             uintptr_t origFuncPlusStolenBytes = targetFuncAddr + stolenBytesSize;
-            proc->ReadMemory(reinterpret_cast<BYTE*>(targetFuncAddr), trampoline, stolenBytesSize); // read stolen bytes
+            proc.ReadMemory(reinterpret_cast<BYTE*>(targetFuncAddr), trampoline, stolenBytesSize); // read stolen bytes
             BuildAbsoluteJump(trampoline + stolenBytesSize, origFuncPlusStolenBytes); // add jmp to original function
-            proc->WriteMemory(trampolineAddr, trampoline, stolenBytesSize + ABS_JMP_SIZE);
+            proc.WriteMemory(trampolineAddr, trampoline, stolenBytesSize + ABS_JMP_SIZE);
             delete[] trampoline;
 
             // write trampolineAddr to trampolineAddrPtr
-            proc->WriteMemory(reinterpret_cast<BYTE*>(trampolineAddrPtr), (BYTE*) &trampolineAddr, sizeof(void*), true);
+            proc.WriteMemory(reinterpret_cast<BYTE*>(trampolineAddrPtr), (BYTE*) &trampolineAddr, sizeof(void*), true);
 
             // write stub + nops
             int extraNops = stolenBytesSize - REL_JMP_SIZE;
             BYTE* hookStub = new BYTE[REL_JMP_SIZE + extraNops];
             BuildRelativeJump(hookStub, targetFuncAddr, reinterpret_cast<uintptr_t>(relayAddr)); // add hook: original -> relay
             memset(hookStub + REL_JMP_SIZE, NOP, extraNops); // nops
-            proc->WriteMemory(reinterpret_cast<BYTE*>(targetFuncAddr), hookStub, REL_JMP_SIZE + extraNops, true);
+            proc.WriteMemory(reinterpret_cast<BYTE*>(targetFuncAddr), hookStub, REL_JMP_SIZE + extraNops, true);
             delete[] hookStub;
 
             success = true;
@@ -158,17 +159,16 @@ bool InstallTrampolineHook(Process* proc, char* targetModule, char* targetFuncti
     }
 
 cleanup:
-    delete dll;
     if (!success)
     {
         std::cerr << "Could not install Inline hook\n";
         if (trampolineAddr)
         {
-            proc->FreeMemory(trampolineAddr);
+            proc.FreeMemory(trampolineAddr);
         }
         if (relayAddr)
         {
-            proc->FreeMemory(relayAddr);
+            proc.FreeMemory(relayAddr);
         }
     }
     return success;
