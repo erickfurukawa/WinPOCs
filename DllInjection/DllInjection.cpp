@@ -1,12 +1,5 @@
 #include "DllInjection.h"
 
-// TODO: remove after changing all projects to stop using Process pointers
-HANDLE InjectDll(Process* proc, char* dllPath)
-{
-    PE dll(dllPath);
-    return InjectDll(*proc, dll);
-}
-
 HANDLE InjectDll(Process& proc, char* dllPath)
 {
     PE dll(dllPath);
