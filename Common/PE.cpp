@@ -90,11 +90,11 @@ PE::PE(const char* fileName)
         ThrowException(std::string("Could not open file: ") + fileName);
     }
 
-    GetFullPathName(fileName, MAX_PATH+1, this->filePath, nullptr);
+    GetFullPathName(fileName, MAX_PATH, this->filePath, nullptr);
 
     // get only filename
     std::string fullPath = std::string(this->filePath);
-    strncpy_s(this->fileName, fullPath.substr(fullPath.find_last_of("/\\") + 1).c_str(), MAX_LENGTH + 1);
+    strncpy_s(this->fileName, fullPath.substr(fullPath.find_last_of("/\\") + 1).c_str(), MAX_LENGTH);
 
     // get file size and allocate buffer
     file.seekg(0, std::ios::end);
@@ -129,14 +129,44 @@ PE::PE(const char* fileName)
     }
 }
 
+PE::PE(BYTE* buffer, size_t size)
+{
+    this->fileSize = size;
+    this->buffer = new BYTE[static_cast<int>(this->fileSize)];
+    memcpy(this->buffer, buffer, size);
+
+    // get PE headers
+    if (!GetPEHeaders(this->buffer, &this->headers))
+    {
+        ThrowException("Could not get valid PE headers");
+    }
+
+    this->is32Bits = this->headers.pFileHeader->Machine == IMAGE_FILE_MACHINE_I386;
+    if (this->is32Bits)
+    {
+        this->pDataDirectory = this->headers.pOptionalHeader32->DataDirectory;
+    }
+    else
+    {
+        this->pDataDirectory = this->headers.pOptionalHeader64->DataDirectory;
+    }
+
+    // .NET
+    this->isDotNet = this->pDataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress != 0;
+    if (this->isDotNet)
+    {
+        this->ParseDotnetMetadata();
+    }
+}
+
 bool PE::Copy(const PE& from, PE& to)
 {
     if (to.buffer != nullptr)
     {
         delete[] to.buffer;
     }
-    memcpy((void*)to.filePath, (void*)from.filePath, MAX_PATH + 1);
-    memcpy((void*)to.fileName, (void*)from.fileName, MAX_LENGTH + 1);
+    memcpy((void*)to.filePath, (void*)from.filePath, MAX_PATH);
+    memcpy((void*)to.fileName, (void*)from.fileName, MAX_LENGTH);
 
     // copy buffer
     to.fileSize = from.fileSize;

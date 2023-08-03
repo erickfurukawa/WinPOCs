@@ -36,8 +36,9 @@ private:
     void ParseMetadataTablesStream();
 
 public:
-    char filePath[MAX_PATH + 1] = { 0 };
-    char fileName[MAX_LENGTH + 1] = { 0 };
+    // TODO: change to std::string
+    char filePath[MAX_PATH] = { 0 };
+    char fileName[MAX_LENGTH] = { 0 };
     BYTE* buffer = nullptr;
     size_t fileSize = 0;
     bool is32Bits = false;
@@ -49,6 +50,7 @@ public:
 
     PE();
     PE(const char* fileName);
+    PE(BYTE* buffer, size_t size);
     PE(const PE& pe);
     PE& operator=(const PE& pe);
     ~PE();
