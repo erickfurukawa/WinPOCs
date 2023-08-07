@@ -52,6 +52,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TokenPrivileges", "TokenPri
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GhostWritingInjection", "GhostWritingInjection\GhostWritingInjection.vcxproj", "{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PESectionInjection", "PESectionInjection\PESectionInjection.vcxproj", "{56AF5BF2-E482-400F-8A71-239FAA4371DE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -242,6 +244,18 @@ Global
 		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|x64.Build.0 = Release|x64
 		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|x86.ActiveCfg = Release|Win32
 		{6F93B108-4A4B-4C8E-9F5E-B72207125B0F}.Release|x86.Build.0 = Release|Win32
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Debug|Any CPU.Build.0 = Debug|x64
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Debug|x64.ActiveCfg = Debug|x64
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Debug|x64.Build.0 = Debug|x64
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Debug|x86.ActiveCfg = Debug|Win32
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Debug|x86.Build.0 = Debug|Win32
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Release|Any CPU.ActiveCfg = Release|x64
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Release|Any CPU.Build.0 = Release|x64
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Release|x64.ActiveCfg = Release|x64
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Release|x64.Build.0 = Release|x64
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Release|x86.ActiveCfg = Release|Win32
+		{56AF5BF2-E482-400F-8A71-239FAA4371DE}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
