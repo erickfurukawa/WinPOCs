@@ -21,7 +21,7 @@ namespace
     {
         if (pe.is32Bits)
         {
-            return pe.headers.pOptionalHeader64->SectionAlignment;
+            return pe.headers.pOptionalHeader32->SectionAlignment;
         }
         else
         {
