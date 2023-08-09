@@ -41,7 +41,7 @@ bool InjectDotnetDll(Process& proc, PE& dll, const char* methodName, const char*
     std::wstring wMethodName = token;
     std::wstring wTypeName = fullMethodName.substr(0, fullMethodName.size() - (wMethodName.size() + 1));;
 
-    ToWideString(injectDll.filePath, wstr, MAX_PATH + 1);
+    ToWideString(injectDll.filePath.c_str(), wstr, MAX_PATH + 1);
     std::wstring wInjectDllPath(wstr);
     ToWideString(argument, wstr, MAX_LENGTH + 1);
     std::wstring wArgument(wstr);
@@ -81,7 +81,7 @@ bool InjectDotnetDll(Process& proc, PE& dll, const char* methodName, const char*
     std::cout << "Loader arguments allocated at 0x" << std::hex << (uintptr_t)argsAddress << "\n\n";
 
     std::cout << "Injecting loader...\n";
-    HANDLE hThread = InjectDll(proc, loaderDll.filePath);
+    HANDLE hThread = InjectDll(proc, loaderDll.filePath.c_str());
     if (hThread)
     {
         WaitForSingleObject(hThread, INFINITE);
@@ -90,7 +90,7 @@ bool InjectDotnetDll(Process& proc, PE& dll, const char* methodName, const char*
 
         { // restrict variable scope because of goto
             // get address of StartDotNetRuntime function -------------
-            MODULEENTRY32 meLoader = proc.GetModule(loaderDll.fileName);
+            MODULEENTRY32 meLoader = proc.GetModule(loaderDll.fileName.c_str());
             DWORD startRuntimeRVA = loaderDll.GetExportRVA("StartDotnetRuntime");
             void* startRuntimeAddr = meLoader.modBaseAddr + startRuntimeRVA;
             std::cout << "StartDotnetRuntime function at: 0x" << std::hex << (uintptr_t)startRuntimeAddr << "\n";

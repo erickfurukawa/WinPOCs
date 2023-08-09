@@ -36,9 +36,8 @@ private:
     void ParseMetadataTablesStream();
 
 public:
-    // TODO: change to std::string
-    char filePath[MAX_PATH] = { 0 };
-    char fileName[MAX_LENGTH] = { 0 };
+    std::string filePath = std::string();
+    std::string fileName = std::string();
     BYTE* buffer = nullptr;
     size_t fileSize = 0;
     bool is32Bits = false;

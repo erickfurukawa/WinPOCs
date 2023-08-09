@@ -1,6 +1,6 @@
 #include "DllInjection.h"
 
-HANDLE InjectDll(Process& proc, char* dllPath)
+HANDLE InjectDll(Process& proc, const char* dllPath)
 {
     PE dll(dllPath);
     return InjectDll(proc, dll);
@@ -14,8 +14,8 @@ HANDLE InjectDll(Process& proc, PE& dll)
         return nullptr;
     }
 
-    void* dllPathAddr = proc.AllocMemory(strlen(dll.filePath) + 1);
-    proc.WriteMemory(dllPathAddr, (BYTE*)dll.filePath, strlen(dll.filePath) + 1);
+    void* dllPathAddr = proc.AllocMemory(dll.filePath.length() + 1);
+    proc.WriteMemory(dllPathAddr, (BYTE*)dll.filePath.c_str(), dll.filePath.length() + 1);
 
     // find address of LoadLibraryA.
     // needs to find base address of kernel32.dll and the function RVA
