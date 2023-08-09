@@ -297,7 +297,7 @@ BOOL Process::FreeMemory(LPVOID address)
     return success;
 }
 
-BOOL Process::WriteMemory(LPVOID dest, BYTE* buffer, SIZE_T size, bool changeProtect)
+BOOL Process::WriteMemory(LPVOID dest, const BYTE* buffer, SIZE_T size, bool changeProtect)
 {
     DWORD oldProtect = 0;
     if (changeProtect) // change protection to write

@@ -37,7 +37,7 @@ public:
     // alloc memory within a range
     LPVOID AllocMemory(SIZE_T size, LPVOID begin, LPVOID end, DWORD flProtect = PAGE_EXECUTE_READWRITE);
     BOOL FreeMemory(LPVOID address);
-    BOOL WriteMemory(LPVOID dest, BYTE* buffer, SIZE_T size, bool changeProtect = false);
+    BOOL WriteMemory(LPVOID dest, const BYTE* buffer, SIZE_T size, bool changeProtect = false);
     BOOL ReadMemory(LPCVOID addr, BYTE* buffer, SIZE_T size, bool changeProtect = false);
     BOOL VirtualProtect(LPVOID addr, SIZE_T size, DWORD newProtect, PDWORD pOldProtect = nullptr);
     SIZE_T VirtualQuery(LPCVOID addr, PMEMORY_BASIC_INFORMATION pMemInfo);
