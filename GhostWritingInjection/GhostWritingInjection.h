@@ -25,7 +25,7 @@ public:
     bool ResumeThread();
     void GetContext(void* context);
     void SetContext(void* context);
-    void WriteBytes(BYTE* buffer, size_t bufferSize, uintptr_t where);
+    void WriteBytes(const BYTE* buffer, size_t bufferSize, uintptr_t where);
     void WaitForLoop();
     void CallFunctionAt(BYTE* address);
     // makes thread loop

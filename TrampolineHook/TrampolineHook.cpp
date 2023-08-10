@@ -37,7 +37,7 @@ namespace // anonymous namespace for utility functions
     {
         if (targetAddr < MAX_JMP_RANGE(currAddr) && targetAddr > MIN_JMP_RANGE(currAddr))
         {
-            INT32 relAddr = targetAddr - currAddr - 5;
+            INT32 relAddr = static_cast<INT32>(targetAddr - currAddr - 5);
             memcpy(buffer, REL_JMP_BYTES, REL_JMP_SIZE);
             memcpy(buffer + 1, reinterpret_cast<BYTE*>(&relAddr), sizeof(INT32)); // rel addr
             return true;
@@ -56,14 +56,14 @@ bool InstallTrampolineHook(Process& proc, char* targetModule, char* targetFuncti
     BYTE* trampolineAddr = nullptr;
     BYTE* relayAddr = nullptr;
 
-    HANDLE hThread = InjectDll(proc, dll.filePath);
+    HANDLE hThread = InjectDll(proc, dll.filePath.c_str());
     if (hThread)
     {
         WaitForSingleObject(hThread, 3000);
         CloseHandle(hThread);
 
         // get hookFunction address
-        MODULEENTRY32 meDll = proc.GetModule(dll.fileName);
+        MODULEENTRY32 meDll = proc.GetModule(dll.fileName.c_str());
         DWORD hookFunctionRVA = dll.GetExportRVA(hookFunction);
         uintptr_t hookAddr = reinterpret_cast<uintptr_t>(meDll.modBaseAddr) + hookFunctionRVA;
 

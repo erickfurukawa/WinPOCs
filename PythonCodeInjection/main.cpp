@@ -41,7 +41,7 @@ int main(int argc, char** argv)
         std::cout << "Injecting dll " << pythonDll.filePath << " into process " << processName << "...\n";
 
         // Inject dll
-        HANDLE hThread = InjectDll(proc, pythonDll.filePath);
+        HANDLE hThread = InjectDll(proc, pythonDll.filePath.c_str());
         if (!hThread)
         {
             std::cerr << "Could not inject dll into the target process\n";
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 
         // find addresses of Py_InitializeEx and PyRun_SimpleString
         std::cout << "Finding addresses of Py_InitializeEx and PyRun_SimpleString...\n";
-        MODULEENTRY32 pythonMod = proc.GetModule(pythonDll.fileName);
+        MODULEENTRY32 pythonMod = proc.GetModule(pythonDll.fileName.c_str());
         std::cout << pythonDll.fileName << " base address: 0x" << std::hex << (uintptr_t)pythonMod.modBaseAddr << "\n";
 
         DWORD Py_InitializeExRVA = pythonDll.GetExportRVA("Py_InitializeEx");

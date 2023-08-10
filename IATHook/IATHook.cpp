@@ -17,7 +17,7 @@ bool InstallIATHook(Process& proc, char* targetModule, char* targetFunction, cha
         CloseHandle(hThread);
 
         // get hookFunction address
-        MODULEENTRY32 meDll = proc.GetModule(dll.fileName);
+        MODULEENTRY32 meDll = proc.GetModule(dll.fileName.c_str());
         DWORD hookFunctionRVA = dll.GetExportRVA(hookFunction);
         uintptr_t hookAddr = reinterpret_cast<uintptr_t>(meDll.modBaseAddr + hookFunctionRVA);
 

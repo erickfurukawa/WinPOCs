@@ -90,11 +90,10 @@ PE::PE(const char* fileName)
         ThrowException(std::string("Could not open file: ") + fileName);
     }
 
-    GetFullPathName(fileName, MAX_PATH, this->filePath, nullptr);
-
-    // get only filename
-    std::string fullPath = std::string(this->filePath);
-    strncpy_s(this->fileName, fullPath.substr(fullPath.find_last_of("/\\") + 1).c_str(), MAX_LENGTH);
+    char fullPath[MAX_PATH]{0};
+    GetFullPathName(fileName, MAX_PATH, fullPath, nullptr);
+    this->filePath = std::string(fullPath);
+    this->fileName = this->filePath.substr(this->filePath.find_last_of("/\\" + 1));
 
     // get file size and allocate buffer
     file.seekg(0, std::ios::end);
@@ -165,8 +164,8 @@ bool PE::Copy(const PE& from, PE& to)
     {
         delete[] to.buffer;
     }
-    memcpy((void*)to.filePath, (void*)from.filePath, MAX_PATH);
-    memcpy((void*)to.fileName, (void*)from.fileName, MAX_LENGTH);
+    to.filePath = from.filePath;
+    to.fileName = from.fileName;
 
     // copy buffer
     to.fileSize = from.fileSize;
