@@ -15,28 +15,27 @@ namespace
 
 int main(int argc, char** argv)
 {
-    char filePath[MAX_PATH + 1];
+    std::string filePath;
     if (argc == 2)
     {
-        strncpy_s(filePath, argv[1], MAX_PATH + 1);
+        filePath = std::string(argv[1]);
     }
     else
     {
         std::cout << "File path:\n";
-        std::cin.getline(filePath, MAX_PATH + 1);
+        std::cin >> filePath;
     }
 
-    PE* file = new PE(filePath);
-    if (!file->isDotNet)
+    PE file = PE(filePath.c_str());
+    if (!file.isDotNet)
     {
-        std::cerr << "File is not dotnet!";
-        delete file;
+        std::cerr << "File is not .NET!";
         return 1;
     }
 
     std::string jsonStr = "";
 
-    dotnet::Metadata metadata = file->dotnetMetadata;
+    dotnet::Metadata metadata = file.dotnetMetadata;
 
     jsonStr += "{\n";
 
@@ -94,5 +93,5 @@ int main(int argc, char** argv)
     jsonStr += "}\n";
     std::cout << jsonStr;
 
-    delete file;
+    return 0;
 }
