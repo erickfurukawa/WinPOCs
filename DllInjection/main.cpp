@@ -3,38 +3,55 @@
 
 int main(int argc, char** argv)
 {
-    char processName[MAX_LENGTH + 1];
-    char dllPath[MAX_PATH + 1];
+    // TODO: flag options
+    std::string processName {0};
+    std::string dllPath {0};
 
-    if (argc == 3)
+    if (argc >= 3)
     {
-        strncpy_s(processName, argv[1], MAX_LENGTH + 1);
-        strncpy_s(dllPath, argv[2], MAX_PATH + 1);
+        processName = std::string(argv[1]);
+        dllPath = std::string(argv[2]);
     }
     else
     {
         std::cout << "Process name:\n";
-        std::cin.getline(processName, MAX_LENGTH + 1);
+        std::cin >> processName;
         std::cout << "Dll path:\n";
-        std::cin.getline(dllPath, MAX_PATH + 1);
+        std::cin >> dllPath;
     }
 
-    PE dll = PE(dllPath);
-    Process proc = Process(processName);
+    Process proc = Process(processName.c_str());
     bool success = false;
     if (proc.Open(PROCESS_CREATE_THREAD | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION))
     {
-        std::cout << "Injecting dll " << dll.filePath << " into process " << processName << std::endl;
-        HANDLE hThread = InjectDll(proc, dll);
-        if (hThread)
+        if (argc == 4) // unload dll
         {
-            CloseHandle(hThread);
-            std::cout << "Dll has probably been injected successfully\n";
-            success = true;
+            std::cout << "Unloading dll " << dllPath << " from process " << processName << std::endl;
+            if (UnloadDll(proc, dllPath))
+            {
+                std::cout << "Dll has probably been unloaded successfully\n";
+                success = true;
+            }
+            else
+            {
+                std::cerr << "Could not unload dll from the target process\n";
+            }
         }
-        else
+        else // inject dll
         {
-            std::cerr << "Could not inject dll into the target process\n";
+            PE dll = PE(dllPath.c_str());
+            std::cout << "Injecting dll " << dll.filePath << " into process " << processName << std::endl;
+            HANDLE hThread = InjectDll(proc, dll);
+            if (hThread)
+            {
+                CloseHandle(hThread);
+                std::cout << "Dll has probably been injected successfully\n";
+                success = true;
+            }
+            else
+            {
+                std::cerr << "Could not inject dll into the target process\n";
+            }
         }
         proc.Close();
     }

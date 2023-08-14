@@ -10,3 +10,5 @@
 HANDLE InjectDll(Process& proc, const char* dllPath);
 // The thread handle must be closed by the caller
 HANDLE InjectDll(Process& proc, PE& dll);
+
+bool UnloadDll(Process& proc, std::string moduleName);
