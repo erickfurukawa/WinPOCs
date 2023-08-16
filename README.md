@@ -4,7 +4,7 @@ A collection of POCs for Windows to serve as a reference for other projects and 
 
 Many of the projects utilize techniques similar to those used by malware. It might be necessary to disable your antivirus to run them without any issues.
 
-- [DllInjection](DllInjection): The classic way to inject a DLL into a running process. It writes the DLL path in the target process' memory and starts a remote thread to call `LoadLibraryA`. DLLs may also be unloaded from the target process in a similar way with `GetModuleHandle` and `FreeLibraryA`.
+- [DllInjection](DllInjection): The classic way to inject a DLL into a running process. It writes the DLL path in the target process' memory and starts a remote thread to call `LoadLibraryA`. DLLs may also be unloaded from the target process in a similar way with `FreeLibrary`.
 - [ManualMapping](ManualMapping): A technique to inject a DLL by manually mapping it into the target process. Since the injection is done manually, the DLL will not show up as a module, and there is no way to obtain a handle to the DLL (I think). It is often used in game hacking as it prevents the anti-cheat from detecting the injected DLL to a certain extent.
 - [GhostWritingInjection](GhostWritingInjection): Ghost writing is a technique that allows writing arbitrary data in the target process without a process handle. Instead, it utilizes a thread handle and ROP gadgets to control the execution flow of a thread and achieve arbitrary code execution. This project injects a DLL into a target process by utilizing this technique.
 - [PythonCodeInjection](PythonCodeInjection): An injector to run python code in a process. It injects a `pythonXX.dll`, makes the process call `Py_InitializeEx`, and then makes it run code with `PyRun_SimpleString`.
