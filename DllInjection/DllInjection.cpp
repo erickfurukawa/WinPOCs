@@ -35,9 +35,6 @@ HANDLE InjectDll(Process& proc, PE& dll)
 
 bool UnloadDll(Process& proc, std::string moduleName)
 {
-    void* dllPathAddr = proc.AllocMemory(moduleName.length() + 1);
-    proc.WriteMemory(dllPathAddr, (BYTE*)moduleName.c_str(), moduleName.length() + 1);
-
     // find address of FreeLibrary
     MODULEENTRY32 meKernel32 = proc.GetModule("kernel32.dll");
     PE kernel32 = PE(meKernel32.szExePath);
@@ -54,12 +51,10 @@ bool UnloadDll(Process& proc, std::string moduleName)
     if (!hThread)
     {
         std::cerr << "CreateRemoteThread error (FreeLibrary) " << GetLastError() << std::endl;
-        proc.FreeMemory(dllPathAddr);
         return false;
     }
     WaitForSingleObject(hThread, INFINITE);
     CloseHandle(hThread);
 
-    proc.FreeMemory(dllPathAddr);
     return true;
 }
