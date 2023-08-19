@@ -15,13 +15,25 @@ bool InjectDotnetDll(Process& proc, const char* dllPath, const char* methodName,
     return InjectDotnetDll(proc, dll, methodName, argument);
 }
 
-bool InjectDotnetDll(Process& proc, PE& dll, const char* methodName, const char* argument)
+bool InjectDotnetDll(Process& proc, PE& injectDll, const char* methodName, const char* argument)
 {
     bool success = false;
-    char loaderPath[] = "dotnetDllLoader.dll";
-    PE loaderDll = PE(loaderPath);
-    PE injectDll = dll;
+    PE loaderDll;
     BYTE* argsAddress = nullptr;
+
+    // choose appropriate loader bitness
+    if (FileExists("DotnetDllLoader64.dll") && !proc.is32Bits)
+    {
+        loaderDll = PE("DotnetDllLoader64.dll");
+    }
+    else if (FileExists("DotnetDllLoader32.dll") && proc.is32Bits)
+    {
+        loaderDll = PE("DotnetDllLoader32.dll");
+    }
+    else
+    {
+        loaderDll = PE("DotnetDllLoader.dll");
+    }
 
     if (proc.is32Bits != loaderDll.is32Bits)
     {
