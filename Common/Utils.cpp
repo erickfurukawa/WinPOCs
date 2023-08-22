@@ -57,3 +57,21 @@ BYTE* ScanPattern(const BYTE* pattern, const char* mask, const BYTE* src, uintpt
     }
     return nullptr;
 }
+
+uintptr_t FindFunctionAddress(const char* moduleName, const char* functionName)
+{
+    HMODULE hMod = GetModuleHandleA(moduleName);
+    if (hMod == NULL)
+    {
+        std::cerr << "Could not find module " << moduleName << std::endl;
+        return 0;
+    }
+
+    uintptr_t funcAddress = reinterpret_cast<uintptr_t>(GetProcAddress(hMod, functionName));
+    if (!funcAddress)
+    {
+        std::cerr << "Could not find function " << functionName << " in module " << moduleName << std::endl;
+        return 0;
+    }
+    return funcAddress;
+}

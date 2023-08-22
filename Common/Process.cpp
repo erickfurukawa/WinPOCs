@@ -467,18 +467,9 @@ MODULEENTRY32 Process::GetMainModule()
 
 bool Process::GetProcessInformation(ProcessInformation* pbi)
 {
-    // find NtQueryInformationProcess function
-    HMODULE hNtDll = LoadLibraryA("ntdll.dll");
-    if (hNtDll == NULL)
-    {
-        std::cerr << "Could not find module ntdll.dll\n";
-        return false;
-    }
-
-    f_NtQueryInformationProcess pNtQueryInformationProcess = (f_NtQueryInformationProcess)GetProcAddress(hNtDll, "NtQueryInformationProcess");
+    f_NtQueryInformationProcess pNtQueryInformationProcess = (f_NtQueryInformationProcess)FindFunctionAddress("ntdll.dll", "NtQueryInformationProcess");
     if (pNtQueryInformationProcess == NULL)
     {
-        FreeLibrary(hNtDll);
         std::cerr << "Could not find NtQueryInformationProcess\n";
         return false;
     }

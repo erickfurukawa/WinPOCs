@@ -16,3 +16,5 @@ size_t ToWideString(const char* mbstr, wchar_t* wstr, size_t max);
     The mask can contain '?' characters to match any byte.
 */
 BYTE* ScanPattern(const BYTE* pattern, const char* mask, const BYTE* src, uintptr_t srcSize);
+
+uintptr_t FindFunctionAddress(const char* moduleName, const char* functionName);
