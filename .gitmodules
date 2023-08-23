@@ -1,0 +1,3 @@
+[submodule "Common/phnt"]
+	path = Common/phnt
+	url = https://github.com/winsiderss/phnt.git
