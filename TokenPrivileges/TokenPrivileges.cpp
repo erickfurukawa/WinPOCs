@@ -2,6 +2,38 @@
 #include <iostream>
 #include <memory>
 
+namespace
+{
+    IntegrityLevel IntegrityLevelValueToEnum(DWORD integrityLevel)
+    {
+        if (integrityLevel >= SECURITY_MANDATORY_PROTECTED_PROCESS_RID)
+        {
+            return IntegrityLevel::Protected;
+        }
+        if (integrityLevel >= SECURITY_MANDATORY_SYSTEM_RID)
+        {
+            return IntegrityLevel::System;
+        }
+        if (integrityLevel >= SECURITY_MANDATORY_HIGH_RID)
+        {
+            return IntegrityLevel::High;
+        }
+        if (integrityLevel >= SECURITY_MANDATORY_MEDIUM_PLUS_RID)
+        {
+            return IntegrityLevel::MediumPlus;
+        }
+        if (integrityLevel >= SECURITY_MANDATORY_MEDIUM_RID)
+        {
+            return IntegrityLevel::Medium;
+        }
+        if (integrityLevel >= SECURITY_MANDATORY_LOW_RID)
+        {
+            return IntegrityLevel::Low;
+        }
+        return IntegrityLevel::Untrusted;
+    }
+}
+
 std::string LUIDToString(LUID Luid)
 {
     DWORD stringSize = 0;
@@ -77,4 +109,27 @@ bool EnableAllPrivileges(HANDLE procToken)
         success = false;
     }
     return success;
+}
+
+IntegrityLevel GetIntegrityLevel(HANDLE procToken)
+{
+    std::string integrityLevel = "";
+    DWORD returnSize = 0;
+
+    // get required size for buffer and allocate
+    GetTokenInformation(procToken, TOKEN_INFORMATION_CLASS::TokenIntegrityLevel, nullptr, 0, &returnSize);
+    auto tokenLabelBuffer = std::make_unique<BYTE[]>(returnSize);
+    TOKEN_MANDATORY_LABEL* pTokenLabel = reinterpret_cast<TOKEN_MANDATORY_LABEL*>(tokenLabelBuffer.get());
+
+    // get integrity level information
+    if (GetTokenInformation(procToken, TOKEN_INFORMATION_CLASS::TokenIntegrityLevel, pTokenLabel, returnSize, &returnSize))
+    {
+        DWORD dwIntegrityLevel = *GetSidSubAuthority(pTokenLabel->Label.Sid, static_cast<DWORD>((*GetSidSubAuthorityCount(pTokenLabel->Label.Sid)) - 1u));
+        return IntegrityLevelValueToEnum(dwIntegrityLevel);
+    }
+    else
+    {
+        std::cerr << "GetTokenInformation error " << GetLastError() << std::endl;
+    }
+    return IntegrityLevel::Unknown;
 }
