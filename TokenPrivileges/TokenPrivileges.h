@@ -28,4 +28,6 @@ bool GetPrivilegeList(HANDLE procToken, std::vector<PrivilegeStatus>& privileges
 
 bool EnableAllPrivileges(HANDLE procToken);
 
-IntegrityLevel GetIntegrityLevel(HANDLE procToken);
+IntegrityLevel GetIntegrityLevel(HANDLE token);
+
+bool ImpersonateToken(HANDLE token);
