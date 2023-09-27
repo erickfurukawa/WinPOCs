@@ -93,7 +93,7 @@ PE::PE(const char* fileName)
     char fullPath[MAX_PATH]{0};
     GetFullPathName(fileName, MAX_PATH, fullPath, nullptr);
     this->filePath = std::string(fullPath);
-    this->fileName = this->filePath.substr(this->filePath.find_last_of("/\\" + 1));
+    this->fileName = this->filePath.substr(this->filePath.find_last_of("/\\") + 1);
 
     // get file size and allocate buffer
     file.seekg(0, std::ios::end);
