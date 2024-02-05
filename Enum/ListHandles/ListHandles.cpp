@@ -62,7 +62,7 @@ std::vector<HandleInfo> GetSystemHandles(PULONG totalHandlesCount)
     PSYSTEM_HANDLE_INFORMATION_EX pSystemHandles = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION_EX>(systemHandlesBuffer.get());
     if (totalHandlesCount != nullptr)
     {
-        *totalHandlesCount = pSystemHandles->NumberOfHandles;
+        *totalHandlesCount = static_cast<ULONG>(pSystemHandles->NumberOfHandles);
     }
     for (ULONG i = 0; i < pSystemHandles->NumberOfHandles; i++)
     {
