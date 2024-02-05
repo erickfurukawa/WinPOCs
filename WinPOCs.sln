@@ -58,6 +58,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Enum", "Enum", "{35D46BB2-C
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ListHandles", "Enum\ListHandles\ListHandles.vcxproj", "{D14DF76B-082D-4BF6-B0B2-B352AB3E1BCA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DumpResources", "DumpResources\DumpResources.vcxproj", "{BB00A020-0BE3-4701-9B07-E7B6FABD884C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -272,6 +274,18 @@ Global
 		{D14DF76B-082D-4BF6-B0B2-B352AB3E1BCA}.Release|x64.Build.0 = Release|x64
 		{D14DF76B-082D-4BF6-B0B2-B352AB3E1BCA}.Release|x86.ActiveCfg = Release|Win32
 		{D14DF76B-082D-4BF6-B0B2-B352AB3E1BCA}.Release|x86.Build.0 = Release|Win32
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Debug|Any CPU.Build.0 = Debug|x64
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Debug|x64.ActiveCfg = Debug|x64
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Debug|x64.Build.0 = Debug|x64
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Debug|x86.ActiveCfg = Debug|Win32
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Debug|x86.Build.0 = Debug|Win32
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Release|Any CPU.ActiveCfg = Release|x64
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Release|Any CPU.Build.0 = Release|x64
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Release|x64.ActiveCfg = Release|x64
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Release|x64.Build.0 = Release|x64
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Release|x86.ActiveCfg = Release|Win32
+		{BB00A020-0BE3-4701-9B07-E7B6FABD884C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

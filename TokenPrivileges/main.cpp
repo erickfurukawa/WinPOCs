@@ -45,7 +45,7 @@ int main(int argc, char** argv)
         }
     }
     
-    bool success = true;
+    bool success = false;
     if (proc.Open(PROCESS_QUERY_LIMITED_INFORMATION) && proc.OpenProcessToken(TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY))
     {
         if (option == 0)
