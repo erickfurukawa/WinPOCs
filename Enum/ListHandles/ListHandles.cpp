@@ -1,4 +1,5 @@
 #include "ListHandles.h"
+#include "../../Common/Utils.h"
 #include <phnt.h>
 #include <memory>
 #include <iostream>
@@ -10,11 +11,74 @@ namespace
         ULONG Reserved[22];
     } PUBLIC_OBJECT_TYPE_INFORMATION, * PPUBLIC_OBJECT_TYPE_INFORMATION;
 
-    std::wstring GetHandleType(HANDLE remoteHandle, DWORD handleOwnerPid)
+    std::wstring NtPathToCanonical(std::wstring ntPath)
     {
+        std::wstring ntPathLower = ntPath;
+        LowerString(ntPathLower);
+
+        DWORD dwDriveMask = GetLogicalDrives();
+        for (int i = 0; i < 26; i++)
+        {
+            if (dwDriveMask & (1 << i))
+            {
+                wchar_t driveNameBuffer[MAX_PATH];
+                wchar_t drive[3] = {0};
+                drive[0] = L'A' + i;
+                drive[1] = L':';
+                if (QueryDosDeviceW(drive, driveNameBuffer, MAX_PATH) != 0)
+                {
+                    std::wstring driveName = std::wstring(driveNameBuffer);
+                    LowerString(driveName);
+
+                    if (ntPathLower.find(driveName) != std::string::npos)
+                    {
+                        return drive + ntPath.substr(driveName.size(), ntPath.size() - driveName.size());
+                    }
+                }
+            }
+        }
+        return L"";
+    }
+
+    std::wstring HandleToFileName(HANDLE handle)
+    {
+        ULONG returnLength = 0;
+        int size = 0x500;
+        auto buffer = std::make_unique<wchar_t[]>(size);
+
+        switch (GetFileType(handle))
+        {
+        case(FILE_TYPE_CHAR):
+            return std::wstring(L"[unknown char]");
+            break;
+        case(FILE_TYPE_DISK):
+            if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS::ObjectNameInformation, buffer.get(), 0x1000, &returnLength) == STATUS_SUCCESS)
+            {
+                return NtPathToCanonical(std::wstring(reinterpret_cast<POBJECT_NAME_INFORMATION>(buffer.get())->Name.Buffer));
+            }
+            return std::wstring(L"[unknown disk]");
+            break;
+        case(FILE_TYPE_PIPE):
+                return std::wstring(L"[unknown pipe]");
+            break;
+        case(FILE_TYPE_REMOTE):
+            return std::wstring(L"[unknown remote]");
+            break;
+        default:
+            if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS::ObjectNameInformation, buffer.get(), 0x1000, &returnLength) == STATUS_SUCCESS)
+            {
+                return std::wstring(reinterpret_cast<POBJECT_NAME_INFORMATION>(buffer.get())->Name.Buffer);
+            }
+            return std::wstring(L"[unknown]");
+            break;
+        }
+    }
+
+    bool GetHandleInfo(HANDLE remoteHandle, DWORD handleOwnerPid, std::wstring& handleType, std::wstring& handleName)
+    {
+        bool success = false;
         // opens process, duplicates handle, and queries handle info
-        std::wstring type;
-        HANDLE self = OpenProcess(PROCESS_ALL_ACCESS, false, GetCurrentProcessId());
+        HANDLE self = GetCurrentProcess();
         HANDLE hProc = OpenProcess(PROCESS_DUP_HANDLE, FALSE, handleOwnerPid);
         if (hProc)
         {
@@ -27,14 +91,19 @@ namespace
                 status = NtQueryObject(localHandle, OBJECT_INFORMATION_CLASS::ObjectTypeInformation, buffer.get(), 0x1000, &returnLength);
                 if (status == STATUS_SUCCESS)
                 {
-                    type = std::wstring(reinterpret_cast<PPUBLIC_OBJECT_TYPE_INFORMATION>(buffer.get())->TypeName.Buffer);
+                    success = true; // TODO: REMOVE AFTER ADDING ALL HANDLE NAMES
+                    handleType = std::wstring(reinterpret_cast<PPUBLIC_OBJECT_TYPE_INFORMATION>(buffer.get())->TypeName.Buffer);
+                    
+                    if (handleType == L"File")
+                    {
+                        handleName = HandleToFileName(localHandle);
+                    }
                 }
-                
                 CloseHandle(localHandle);
             }
             CloseHandle(hProc);
         }
-        return type;
+        return success;
     }
 }
 
@@ -67,13 +136,14 @@ std::vector<HandleInfo> GetSystemHandles(PULONG totalHandlesCount)
     for (ULONG i = 0; i < pSystemHandles->NumberOfHandles; i++)
     {
         SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX handleInfoEx = pSystemHandles->Handles[i];
-        std::wstring type = GetHandleType(reinterpret_cast<HANDLE>(handleInfoEx.HandleValue), static_cast<DWORD>(handleInfoEx.UniqueProcessId));
-        if (!type.empty())
+        std::wstring handleType, handleName;
+        if (GetHandleInfo(reinterpret_cast<HANDLE>(handleInfoEx.HandleValue), static_cast<DWORD>(handleInfoEx.UniqueProcessId), handleType, handleName))
         {
             HandleInfo handleEntry{ 0 };
             handleEntry.remoteHandle = reinterpret_cast<HANDLE>(handleInfoEx.HandleValue);
             handleEntry.processId = static_cast<DWORD>(handleInfoEx.UniqueProcessId);
-            handleEntry.handleType = type;
+            handleEntry.handleType = handleType;
+            handleEntry.handleName = handleName;
             handles.push_back(handleEntry);
         }
     }

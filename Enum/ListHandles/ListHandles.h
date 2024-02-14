@@ -8,6 +8,7 @@ typedef struct
     HANDLE remoteHandle;
     DWORD processId;
     std::wstring handleType;
+    std::wstring handleName;
 } HandleInfo;
 
 /*

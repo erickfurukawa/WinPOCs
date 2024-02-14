@@ -21,7 +21,7 @@ int main(int argc, char** argv)
             continue;
         }
 
-        std::wcout << L"PID: " << handle.processId << L" Type: " << handle.handleType << std::endl;
+        std::wcout << L"PID: " << handle.processId << L" Type: " << handle.handleType << L"  Name: " << handle.handleName  << std::endl;
     }
     return 0;
 }
