@@ -7,6 +7,7 @@
 enum class IntegrityLevel
 {
     Unknown = 0,
+    AppContainer,
     Untrusted,
     Low,
     Medium,
@@ -31,3 +32,5 @@ bool EnableAllPrivileges(HANDLE procToken);
 IntegrityLevel GetIntegrityLevel(HANDLE token);
 
 bool ImpersonateToken(HANDLE token);
+
+std::wstring IntegrityLevelToString(IntegrityLevel il);

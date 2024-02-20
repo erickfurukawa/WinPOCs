@@ -1,9 +1,23 @@
 #include "TokenPrivileges.h"
 #include <iostream>
 #include <memory>
+#include <map>
 
 namespace
 {
+    std::map<IntegrityLevel, std::wstring> ilMap
+    {
+        {IntegrityLevel::Unknown, L"Unknown"},
+        {IntegrityLevel::AppContainer, L"AppContainer"},
+        {IntegrityLevel::Untrusted, L"Untrusted"},
+        {IntegrityLevel::Low, L"Low"},
+        {IntegrityLevel::Medium, L"Medium"},
+        {IntegrityLevel::MediumPlus, L"MediumPlus"},
+        {IntegrityLevel::High, L"High"},
+        {IntegrityLevel::System, L"System"},
+        {IntegrityLevel::Protected, L"Protected"}
+    };
+
     IntegrityLevel IntegrityLevelValueToEnum(DWORD integrityLevel)
     {
         if (integrityLevel >= SECURITY_MANDATORY_PROTECTED_PROCESS_RID)
@@ -115,6 +129,16 @@ IntegrityLevel GetIntegrityLevel(HANDLE token)
 {
     std::string integrityLevel = "";
     DWORD returnSize = 0;
+    DWORD isAppContainer = 0;
+
+    // check if is appcontainer first
+    if (GetTokenInformation(token, TOKEN_INFORMATION_CLASS::TokenIsAppContainer, &isAppContainer, sizeof(DWORD), &returnSize))
+    {
+        if (isAppContainer != 0)
+        {
+            return IntegrityLevel::AppContainer;
+        }
+    }
 
     // get required size for buffer and allocate
     GetTokenInformation(token, TOKEN_INFORMATION_CLASS::TokenIntegrityLevel, nullptr, 0, &returnSize);
@@ -156,4 +180,9 @@ bool ImpersonateToken(HANDLE token)
         std::cerr << "DuplicateToken error " << GetLastError() << std::endl;
     }
     return success;
+}
+
+std::wstring IntegrityLevelToString(IntegrityLevel il)
+{
+    return ilMap[il];
 }
