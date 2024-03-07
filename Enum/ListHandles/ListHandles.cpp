@@ -3,6 +3,7 @@
 #include <phnt.h>
 #include <memory>
 #include <iostream>
+#include <psapi.h>
 
 namespace
 {
@@ -166,6 +167,23 @@ namespace
         }
         return fileName;
     }
+
+    std::wstring GetProcessHandleName(HANDLE handle)
+    {
+        std::wstring processName = L"[unknown process]";
+        HANDLE queryHandle = nullptr;
+        
+        if (DuplicateHandle(GetCurrentProcess(), handle, GetCurrentProcess(), &queryHandle, PROCESS_QUERY_LIMITED_INFORMATION, FALSE, 0))
+        {
+            wchar_t buffer[0x1000] = {};
+            if (GetProcessImageFileNameW(queryHandle, buffer, 0x1000) > 0)
+            {
+                processName = NtPathToCanonical(std::wstring(buffer));
+            }
+            CloseHandle(queryHandle);
+        }
+        return processName;
+    }
 }
 
 std::wstring GetHandleName(HANDLE handle)
@@ -175,6 +193,10 @@ std::wstring GetHandleName(HANDLE handle)
     if (handleType == L"File")
     {
         return GetFileHandleName(handle);
+    }
+    else if (handleType == L"Process")
+    {
+        return GetProcessHandleName(handle);
     }
     else  // TODO: other handle types
     {
