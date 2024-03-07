@@ -16,3 +16,5 @@ typedef struct
     totalHandlesCount gets the number of total handles in the system.
 */
 std::vector<HandleInfo> GetSystemHandles(PULONG totalHandlesCount);
+
+std::wstring GetHandleName(HANDLE handle);

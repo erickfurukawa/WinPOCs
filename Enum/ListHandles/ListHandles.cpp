@@ -6,10 +6,17 @@
 
 namespace
 {
-    typedef struct __PUBLIC_OBJECT_TYPE_INFORMATION {
+    typedef struct __PUBLIC_OBJECT_TYPE_INFORMATION
+    {
         UNICODE_STRING TypeName;
         ULONG Reserved[22];
     } PUBLIC_OBJECT_TYPE_INFORMATION, * PPUBLIC_OBJECT_TYPE_INFORMATION;
+
+    typedef struct
+    {
+        HANDLE handle;
+        std::wstring pipeName;
+    } GetPipeNameWorkerArgs;
 
     std::wstring NtPathToCanonical(std::wstring ntPath)
     {
@@ -40,71 +47,140 @@ namespace
         return L"";
     }
 
-    std::wstring HandleToFileName(HANDLE handle)
+    HANDLE DuplicateRemoteHandle(HANDLE remoteHandle, DWORD handleOwnerPid)
     {
-        ULONG returnLength = 0;
-        int size = 0x500;
-        auto buffer = std::make_unique<wchar_t[]>(size);
-
-        switch (GetFileType(handle))
-        {
-        case(FILE_TYPE_CHAR):
-            return std::wstring(L"[unknown char]");
-            break;
-        case(FILE_TYPE_DISK):
-            if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS::ObjectNameInformation, buffer.get(), 0x1000, &returnLength) == STATUS_SUCCESS)
-            {
-                return NtPathToCanonical(std::wstring(reinterpret_cast<POBJECT_NAME_INFORMATION>(buffer.get())->Name.Buffer));
-            }
-            return std::wstring(L"[unknown disk]");
-            break;
-        case(FILE_TYPE_PIPE):
-                return std::wstring(L"[unknown pipe]");
-            break;
-        case(FILE_TYPE_REMOTE):
-            return std::wstring(L"[unknown remote]");
-            break;
-        default:
-            if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS::ObjectNameInformation, buffer.get(), 0x1000, &returnLength) == STATUS_SUCCESS)
-            {
-                return std::wstring(reinterpret_cast<POBJECT_NAME_INFORMATION>(buffer.get())->Name.Buffer);
-            }
-            return std::wstring(L"[unknown]");
-            break;
-        }
-    }
-
-    bool GetHandleInfo(HANDLE remoteHandle, DWORD handleOwnerPid, std::wstring& handleType, std::wstring& handleName)
-    {
-        bool success = false;
-        // opens process, duplicates handle, and queries handle info
-        HANDLE self = GetCurrentProcess();
+        HANDLE localHandle = nullptr;
         HANDLE hProc = OpenProcess(PROCESS_DUP_HANDLE, FALSE, handleOwnerPid);
         if (hProc)
         {
-            HANDLE localHandle;
-            NTSTATUS status = NtDuplicateObject(hProc, remoteHandle, self, &localHandle, 0, 0, DUPLICATE_SAME_ACCESS);
+            NTSTATUS status = NtDuplicateObject(hProc, remoteHandle, GetCurrentProcess(), &localHandle, 0, 0, DUPLICATE_SAME_ACCESS);
             if (status == STATUS_SUCCESS)
             {
                 ULONG returnLength;
                 auto buffer = std::make_unique<BYTE[]>(0x1000);
                 status = NtQueryObject(localHandle, OBJECT_INFORMATION_CLASS::ObjectTypeInformation, buffer.get(), 0x1000, &returnLength);
-                if (status == STATUS_SUCCESS)
+                if (status != STATUS_SUCCESS)
                 {
-                    success = true; // TODO: REMOVE AFTER ADDING ALL HANDLE NAMES
-                    handleType = std::wstring(reinterpret_cast<PPUBLIC_OBJECT_TYPE_INFORMATION>(buffer.get())->TypeName.Buffer);
-                    
-                    if (handleType == L"File")
-                    {
-                        handleName = HandleToFileName(localHandle);
-                    }
+                    localHandle = NULL;
                 }
-                CloseHandle(localHandle);
             }
             CloseHandle(hProc);
         }
-        return success;
+        return localHandle;
     }
+
+    std::wstring GetHandleType(HANDLE handle)
+    {
+        std::wstring handleType = L"unknown";
+        if (handle)
+        {
+            ULONG returnLength;
+            auto buffer = std::make_unique<BYTE[]>(0x1000);
+            NTSTATUS status = NtQueryObject(handle, OBJECT_INFORMATION_CLASS::ObjectTypeInformation, buffer.get(), 0x1000, &returnLength);
+            if (status == STATUS_SUCCESS)
+            {
+                handleType = std::wstring(reinterpret_cast<PPUBLIC_OBJECT_TYPE_INFORMATION>(buffer.get())->TypeName.Buffer);
+            }
+        }
+        return handleType;
+    }
+    
+    DWORD WINAPI GetPipeNameWorker(GetPipeNameWorkerArgs* args)
+    {
+        ULONG returnLength = 0;
+        BYTE buffer[0x1000] = {};
+        if (GetFileInformationByHandleEx(args->handle, FILE_INFO_BY_HANDLE_CLASS::FileNameInfo, buffer, 0x1000))
+        {
+            args->pipeName = L"\\Device\\NamedPipe" + std::wstring(reinterpret_cast<FILE_NAME_INFO*>(buffer)->FileName);
+        }
+        else
+        {
+            args->pipeName = L"[unknown]";
+        }
+        return 0;
+    }
+
+    std::wstring GetFileHandleName(HANDLE handle)
+    {
+        std::wstring fileName = L"[unknown file]";
+        ULONG returnLength = 0;
+        int size = 0x500;
+        auto buffer = std::make_unique<wchar_t[]>(size);
+        bool success = false;
+
+        // named pipe
+        GetPipeNameWorkerArgs getHandleNameArgs = {};
+        HANDLE threadHandle;
+        DWORD status = 0, threadId = 0;
+
+        switch (GetFileType(handle))
+        {
+        case(FILE_TYPE_CHAR):
+            fileName = std::wstring(L"[unknown char]");
+            break;
+        case(FILE_TYPE_DISK):
+            if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS::ObjectNameInformation, buffer.get(), size*sizeof(wchar_t), &returnLength) == STATUS_SUCCESS)
+            {
+                fileName = NtPathToCanonical(std::wstring(reinterpret_cast<POBJECT_NAME_INFORMATION>(buffer.get())->Name.Buffer));
+            }
+            else
+            {
+                fileName = L"[unknown disk]";
+            }
+            break;
+        case(FILE_TYPE_PIPE):
+            getHandleNameArgs.handle = handle;
+            threadHandle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)GetPipeNameWorker, (LPVOID) &getHandleNameArgs, 0, &threadId);
+            if (threadHandle != NULL)
+            {
+                status = WaitForSingleObject(threadHandle, 30);
+                if (status == WAIT_OBJECT_0)
+                {
+                    success = true;
+                    fileName = getHandleNameArgs.pipeName;
+                }
+                else
+                {
+                    TerminateThread(threadHandle, 0);
+                }
+                CloseHandle(threadHandle);
+            }
+            if (!success)
+            {
+                fileName = std::wstring(L"[unknown pipe]");
+            }
+            break;
+        case(FILE_TYPE_REMOTE):
+            fileName = std::wstring(L"[unknown remote]");
+            break;
+        default:
+            if (NtQueryObject(handle, OBJECT_INFORMATION_CLASS::ObjectNameInformation, buffer.get(), 0x1000, &returnLength) == STATUS_SUCCESS)
+            {
+                fileName = std::wstring(reinterpret_cast<POBJECT_NAME_INFORMATION>(buffer.get())->Name.Buffer);
+            }
+            else
+            {
+                fileName = std::wstring(L"[unknown file]");
+            }
+            break;
+        }
+        return fileName;
+    }
+}
+
+std::wstring GetHandleName(HANDLE handle)
+{
+    std::wstring handleName = L"unknown";
+    std::wstring handleType = GetHandleType(handle);
+    if (handleType == L"File")
+    {
+        return GetFileHandleName(handle);
+    }
+    else  // TODO: other handle types
+    {
+
+    }
+    return handleName;
 }
 
 std::vector<HandleInfo> GetSystemHandles(PULONG totalHandlesCount)
@@ -136,15 +212,16 @@ std::vector<HandleInfo> GetSystemHandles(PULONG totalHandlesCount)
     for (ULONG i = 0; i < pSystemHandles->NumberOfHandles; i++)
     {
         SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX handleInfoEx = pSystemHandles->Handles[i];
-        std::wstring handleType, handleName;
-        if (GetHandleInfo(reinterpret_cast<HANDLE>(handleInfoEx.HandleValue), static_cast<DWORD>(handleInfoEx.UniqueProcessId), handleType, handleName))
+        HANDLE localHandle = DuplicateRemoteHandle(reinterpret_cast<HANDLE>(handleInfoEx.HandleValue), static_cast<DWORD>(handleInfoEx.UniqueProcessId));
+        if (localHandle)
         {
             HandleInfo handleEntry{ 0 };
             handleEntry.remoteHandle = reinterpret_cast<HANDLE>(handleInfoEx.HandleValue);
             handleEntry.processId = static_cast<DWORD>(handleInfoEx.UniqueProcessId);
-            handleEntry.handleType = handleType;
-            handleEntry.handleName = handleName;
+            handleEntry.handleType = GetHandleType(localHandle);
+            handleEntry.handleName = GetHandleName(localHandle);
             handles.push_back(handleEntry);
+            CloseHandle(localHandle);
         }
     }
     return handles;
