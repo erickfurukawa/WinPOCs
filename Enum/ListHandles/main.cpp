@@ -1,6 +1,20 @@
 #include <iostream>
-#include <stdlib.h>
 #include "ListHandles.h"
+
+std::wstring GetAccessString(DWORD grantedAccess, std::wstring accessType)
+{
+    std::vector<std::wstring> accessList = GetAccessListFromMask(grantedAccess, accessType);
+    if (accessList.size() > 0)
+    {
+        std::wstring accessStr = {};
+        for (std::wstring& access : accessList)
+        {
+            accessStr += access + L" | ";
+        }
+        return accessStr.substr(0, accessStr.size() - 3);
+    }
+    return L"[no access]";
+}
 
 int main(int argc, char** argv)
 {
@@ -20,8 +34,8 @@ int main(int argc, char** argv)
         {
             continue;
         }
-
-        std::wcout << L"PID: " << handle.processId << L" Type: " << handle.handleType << L" Name: " << handle.handleName  << std::endl;
+        std::wcout << L"PID: " << handle.processId << L" Type: " << handle.handleType << L" Name: " << handle.handleName << std::endl;
+        std::wcout << GetAccessString(handle.grantedAccess, handle.handleType) << std::endl << std::endl;
     }
     return 0;
 }
