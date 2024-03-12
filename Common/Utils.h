@@ -13,6 +13,10 @@ void LowerString(std::wstring& str);
 
 size_t ToWideString(const char* mbstr, wchar_t* wstr, size_t max);
 
+std::string ToStringUTF8(std::wstring str);
+
+std::string ToStringUTF16(std::wstring str);
+
 /*
     ScanPattern searches for the first ocurrence of "pattern" in "src".
     The mask can contain '?' characters to match any byte.

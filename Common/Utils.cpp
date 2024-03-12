@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <codecvt>
 
 void ThrowException(std::string msg)
 {
@@ -37,6 +38,18 @@ size_t ToWideString(const char* mbstr, wchar_t* wstr, size_t max)
 void LowerString(std::wstring& str)
 {
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+}
+
+std::string ToStringUTF8(std::wstring str)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+    return conv.to_bytes(str);
+}
+
+std::string ToStringUTF16(std::wstring str)
+{
+    std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>> conv;
+    return conv.to_bytes(str);
 }
 
 BYTE* ScanPattern(const BYTE* pattern, const char* mask, const BYTE* src, uintptr_t srcSize)
