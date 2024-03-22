@@ -6,6 +6,8 @@
 #include <psapi.h>
 #include <map>
 
+#pragma comment(lib, "ntdll.lib")
+
 namespace // Handle access -----------------------------------------------------------------
 {
     std::map<DWORD, std::wstring> GenericAndStandardAccessMap = {
