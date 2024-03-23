@@ -32,5 +32,16 @@ public:
 	User() = default;
 	User(std::wstring username);
 
+	/*
+		Given a handle to an object, the function queries the object's DACL and returns the potential
+		access that the user would be able to get when opening a handle to the object.
+		The handle must be opened with READ_CONTROL.
+
+		The function does not consider implicitly granted access rights, such as READ_CONTROL and WRITE_DAC,
+		for the owner of an object when determining effective rights. (see Remarks from Microsoft 
+		documentation for GetEffectiveRightsFromAclW)
+	*/ 
+	DWORD GetAccessRights(HANDLE handle);
+	DWORD GetAccessRights(std::wstring filename);
 	static std::vector<User> GetAllUsers();
 };

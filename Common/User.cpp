@@ -3,6 +3,7 @@
 #include <Lm.h>
 #include <sddl.h>
 #include <iostream>
+#include <aclapi.h>
 
 #pragma comment(lib, "netapi32.lib")
 
@@ -98,6 +99,54 @@ std::vector<User> User::GetAllUsers()
 		users.push_back(User(username));
 	}
 	return users;
+}
+
+DWORD User::GetAccessRights(HANDLE handle)
+{
+	// TODO: check owner
+	DWORD access = 0;
+	PSECURITY_DESCRIPTOR pSecDesc;
+	PACL pAcl;
+
+	if (GetSecurityInfo(handle, SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, &pAcl, nullptr, &pSecDesc) != ERROR_SUCCESS)
+	{
+		std::wcerr << L"GetSecurityInfo error";
+		return 0;
+	}
+	TRUSTEE_W trustee = { 0 };
+	trustee.TrusteeForm = TRUSTEE_IS_SID;
+	trustee.TrusteeType = TRUSTEE_IS_USER;
+	// would be better to use trustee.pSid, but for some reason the union is not defined.
+	trustee.ptstrName = reinterpret_cast<LPWCH>(this->pSid);
+
+	DWORD status = GetEffectiveRightsFromAclW(pAcl, &trustee, &access);
+	LocalFree(pSecDesc);
+
+	if (status != ERROR_SUCCESS)
+	{
+		std::wcerr << L"GetEffectiveRightsFromAclW error";
+		return 0;
+	}
+	return access;
+}
+
+DWORD User::GetAccessRights(std::wstring filename)
+{
+	// try to open file
+	HANDLE handle = CreateFileW(filename.c_str(), READ_CONTROL, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	if (handle == INVALID_HANDLE_VALUE)
+	{
+		// try to open directory
+		handle = CreateFileW(filename.c_str(), READ_CONTROL, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		if (handle == INVALID_HANDLE_VALUE)
+		{
+			std::wcerr << "Could open file or directory " << filename.c_str() << std::endl;
+			return 0;
+		}
+	}
+	DWORD access = this->GetAccessRights(handle);
+	CloseHandle(handle);
+	return access;
 }
 
 Group::Group(std::wstring groupname)
