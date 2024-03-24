@@ -103,31 +103,44 @@ std::vector<User> User::GetAllUsers()
 
 DWORD User::GetAccessRights(HANDLE handle)
 {
-	// TODO: check owner
-	DWORD access = 0;
+	DWORD access = 0, ownerAccess = 0;
 	PSECURITY_DESCRIPTOR pSecDesc;
-	PACL pAcl;
+	PSID pSidOwner;
+	PACL pDacl;
 
-	if (GetSecurityInfo(handle, SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, &pAcl, nullptr, &pSecDesc) != ERROR_SUCCESS)
+	if (GetSecurityInfo(handle, SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION | OWNER_SECURITY_INFORMATION, &pSidOwner, nullptr, &pDacl, nullptr, &pSecDesc) != ERROR_SUCCESS)
 	{
-		std::wcerr << L"GetSecurityInfo error";
+		std::wcerr << L"GetSecurityInfo error\n";
 		return 0;
 	}
+
+	// create user trustee structure
 	TRUSTEE_W trustee = { 0 };
 	trustee.TrusteeForm = TRUSTEE_IS_SID;
 	trustee.TrusteeType = TRUSTEE_IS_USER;
-	// would be better to use trustee.pSid, but for some reason the union is not defined.
-	trustee.ptstrName = reinterpret_cast<LPWCH>(this->pSid);
+	trustee.ptstrName = reinterpret_cast<LPWCH>(this->pSid); // would be better to use trustee.pSid, but for some reason the union is not defined.
 
-	DWORD status = GetEffectiveRightsFromAclW(pAcl, &trustee, &access);
-	LocalFree(pSecDesc);
-
+	// check owner always granted accesses
+	BYTE ownerDaclBuffer[0x100] = { 0 };
+	PACL pOwnerDacl = reinterpret_cast<PACL>(ownerDaclBuffer);
+	InitializeAcl(pOwnerDacl, 0x100, ACL_REVISION);
+	AddAccessAllowedAce(pOwnerDacl, ACL_REVISION, READ_CONTROL | WRITE_DAC, pSidOwner);
+	DWORD status = GetEffectiveRightsFromAclW(pOwnerDacl, &trustee, &ownerAccess);
 	if (status != ERROR_SUCCESS)
 	{
-		std::wcerr << L"GetEffectiveRightsFromAclW error";
+		std::wcerr << L"GetEffectiveRightsFromAclW owner access error\n";
 		return 0;
 	}
-	return access;
+
+	// check dacl accesses
+	status = GetEffectiveRightsFromAclW(pDacl, &trustee, &access);
+	LocalFree(pSecDesc);
+	if (status != ERROR_SUCCESS)
+	{
+		std::wcerr << L"GetEffectiveRightsFromAclW error\n";
+		return 0;
+	}
+	return access | ownerAccess;
 }
 
 DWORD User::GetAccessRights(std::wstring filename)
