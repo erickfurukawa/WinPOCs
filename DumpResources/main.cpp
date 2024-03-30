@@ -1,5 +1,6 @@
-#include "DumpResources.h"
+#include "PeResource.h"
 #include <iostream>
+#include <fstream>
 
 int main(int argc, char** argv)
 {
@@ -16,11 +17,20 @@ int main(int argc, char** argv)
     }
 
     PE file = PE(filePath.c_str());
-    if (DumpResources(file))
+    std::vector<PeResource> resources = PeResource::GetResources(file);
+
+    int i = 0;
+    for (PeResource& resource : resources)
     {
-        std::cout << "Resources dumped successfully!\n";
-        return 0;
+        std::wcout << i << L": " << resource.GetTypeStr() << L" - " << resource.GetIdStr() << L" - " << resource.GetLanguage() << std::endl;
+
+        // dump file
+        std::string fileName = "Dump " + std::to_string(i);
+        std::ofstream fileDump(fileName.c_str(), std::ios::out | std::ios::binary);
+        fileDump.write(reinterpret_cast<char*>(resource.rawData), resource.dataSize);
+        fileDump.close();
+        i++;
     }
-    std::cerr << "Could not dump resources from file!\n";
-    return 1;
+    std::cout << "Resources dumped!\n";
+    return 0;
 }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,11 +131,11 @@
     <ClCompile Include="..\Common\MetadataTables.cpp" />
     <ClCompile Include="..\Common\PE.cpp" />
     <ClCompile Include="..\Common\Utils.cpp" />
-    <ClCompile Include="DumpResources.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PeResource.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DumpResources.h" />
+    <ClInclude Include="PeResource.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
