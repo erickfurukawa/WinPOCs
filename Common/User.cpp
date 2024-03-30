@@ -47,7 +47,7 @@ User::User(std::wstring username)
 	wchar_t* sidStr = nullptr;
 	if (NetUserGetInfo(nullptr, username.c_str(), 23, reinterpret_cast<LPBYTE*>(&pUserInfo23)) != NERR_Success)
 	{
-		ThrowException(std::string("Could not find user: ") + ToStringUTF8(username));
+		ThrowException(std::string("Could not find user: ") + WStringToString(username));
 	}
 	// copy sid from structure to member variables
 	DWORD sidSize = GetLengthSid(pUserInfo23->usri23_user_sid);
@@ -62,7 +62,7 @@ User::User(std::wstring username)
 	DWORD entriesRead, totalEntries;
 	if (NetUserGetLocalGroups(nullptr, username.c_str(), 0, LG_INCLUDE_INDIRECT, reinterpret_cast<LPBYTE*>(&pGroupInfo1), MAX_PREFERRED_LENGTH, &entriesRead, &totalEntries) != NERR_Success)
 	{
-		ThrowException(std::string("Could not get group info of user: ") + ToStringUTF8(username));
+		ThrowException(std::string("Could not get group info of user: ") + WStringToString(username));
 	}
 	for (unsigned int i = 0; i < entriesRead; i++)
 	{
@@ -176,7 +176,7 @@ Group::Group(std::wstring groupname)
 	}
 	else
 	{
-		ThrowException(std::string("Could not find group: ") + ToStringUTF8(groupname));
+		ThrowException(std::string("Could not find group: ") + WStringToString(groupname));
 	}
 
 	SID_NAME_USE type = SID_NAME_USE::SidTypeUser;
@@ -188,6 +188,6 @@ Group::Group(std::wstring groupname)
 	}
 	else
 	{
-		ThrowException(std::string("LookupName error: ") + ToStringUTF8(groupname));
+		ThrowException(std::string("LookupName error: ") + WStringToString(groupname));
 	}
 }

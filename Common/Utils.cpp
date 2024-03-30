@@ -40,16 +40,22 @@ void LowerString(std::wstring& str)
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 }
 
-std::string ToStringUTF8(std::wstring str)
+std::string WStringToString(std::wstring wstr)
 {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-    return conv.to_bytes(str);
+    std::string str;
+    size_t size;
+    str.resize(wstr.length());
+    wcstombs_s(&size, &str[0], str.size() + 1, wstr.c_str(), wstr.size());
+    return str;
 }
 
-std::string ToStringUTF16(std::wstring str)
+std::wstring StringToWString(std::string str)
 {
-    std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>> conv;
-    return conv.to_bytes(str);
+    std::wstring wstr;
+    size_t size;
+    wstr.resize(str.length());
+    mbstowcs_s(&size, &wstr[0], wstr.size() + 1, str.c_str(), str.size());
+    return wstr;
 }
 
 BYTE* ScanPattern(const BYTE* pattern, const char* mask, const BYTE* src, uintptr_t srcSize)

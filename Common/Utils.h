@@ -13,9 +13,9 @@ void LowerString(std::wstring& str);
 
 size_t ToWideString(const char* mbstr, wchar_t* wstr, size_t max);
 
-std::string ToStringUTF8(std::wstring str);
+std::string WStringToString(std::wstring str);
 
-std::string ToStringUTF16(std::wstring str);
+std::wstring StringToWString(std::string str);
 
 /*
     ScanPattern searches for the first ocurrence of "pattern" in "src".
