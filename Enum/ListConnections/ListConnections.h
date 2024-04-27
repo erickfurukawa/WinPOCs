@@ -10,16 +10,31 @@ enum class ProtocolType
     UDP
 };
 
+enum class IpVersion
+{
+    IPv4 = 0,
+    IPv6
+};
+
 typedef struct
 {
     DWORD ownerPid;
     ProtocolType protocol;
+    IpVersion ipVersion;
 
-    DWORD localAddress;
+    union
+    {
+        DWORD localAddressIPv4;
+        UCHAR localAddressIPv6[16];
+    };
     std::wstring localAddressStr;
     DWORD localPort;
 
-    DWORD remoteAddress;
+    union
+    {
+        DWORD remoteAddressIPv4;
+        UCHAR remoteAddressIPv6[16];
+    };
     std::wstring remoteAddressStr;
     DWORD remotePort;
 
@@ -28,6 +43,5 @@ typedef struct
 
 /*
     Returns a list of TCP connections and UDP ports. (UDP is connectionless)
-    #TODO: IPv6
 */
 std::vector<ConnectionInfo> GetConnectionsStatus();
