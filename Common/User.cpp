@@ -129,6 +129,7 @@ DWORD User::GetAccessRights(HANDLE handle)
 	if (status != ERROR_SUCCESS)
 	{
 		std::wcerr << L"GetEffectiveRightsFromAclW owner access error\n";
+		LocalFree(pSecDesc);
 		return 0;
 	}
 
