@@ -238,7 +238,7 @@ namespace
 				connectionInfo.localAddressStr = DwordToIpString(entry.dwLocalAddr);
 				connectionInfo.localPort = ntohs(static_cast<unsigned short>(entry.dwLocalPort));
 				connectionInfo.remoteAddressIPv4 = 0;
-				connectionInfo.remoteAddressStr = L"*";
+				connectionInfo.remoteAddressStr = DwordToIpString(0);
 				connectionInfo.remotePort = 0;
 				connectionInfo.state = L"";
 				connections.push_back(connectionInfo);
@@ -271,7 +271,7 @@ namespace
 				connectionInfo.localAddressStr = IPv6ToIpString(entry.ucLocalAddr);
 				connectionInfo.localPort = ntohs(static_cast<unsigned short>(entry.dwLocalPort));
 				ZeroMemory(connectionInfo.remoteAddressIPv6, 16);
-				connectionInfo.remoteAddressStr = L"*";
+				connectionInfo.remoteAddressStr = IPv6ToIpString(connectionInfo.remoteAddressIPv6);
 				connectionInfo.remotePort = 0;
 				connectionInfo.state = L"";
 				connections.push_back(connectionInfo);
