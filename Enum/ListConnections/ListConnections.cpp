@@ -1,9 +1,11 @@
-#include "ListConnections.h"
-#include <iphlpapi.h>
 #include <winsock2.h>
+#include <iphlpapi.h>
 #include <ws2tcpip.h>
 #include <memory>
 #include <iostream>
+#include <sstream>
+
+#include "ListConnections.h"
 
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -51,12 +53,16 @@ namespace
 
 	std::wstring IPv6ToIpString(UCHAR* address)
 	{
-		wchar_t ipBuffer[40] = {0};
-		swprintf_s(ipBuffer, L"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
-			address[0], address[1], address[2], address[3], address[4], address[5], address[6], address[7], 
-			address[8], address[9], address[10], address[11], address[12], address[13], address[14], address[15]);
-
-		return std::wstring(ipBuffer);
+		std::wstringstream stream;
+		stream << std::hex;
+		for (int i = 0; i < 16; i += 2)
+		{
+			DWORD segment = (address[i] << 8) + address[i + 1];
+			stream << segment << L":";
+		}
+		std::wstring ipStr = stream.str();
+		ipStr = ipStr.substr(0, ipStr.size() - 1);
+		return ipStr;
 	}
 
 	bool GetTcpConnectionTable(IpVersion ipVersion, TCP_TABLE_CLASS tableClass, std::unique_ptr<BYTE[]>& buffer)
